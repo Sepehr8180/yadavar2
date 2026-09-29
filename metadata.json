@@ -1,0 +1,6 @@
+{
+  "name": "یادآور",
+  "description": "برنامه یادآوری، آلارم هوشمند و تقویم شمسی با قابلیت زنگ بیدارباش، تعویق و دسته‌بندی کارها",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
