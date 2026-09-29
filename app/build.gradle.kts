@@ -55,11 +55,14 @@ android {
   }
 }
 
-// Configure the Secrets Gradle Plugin to use .env and .env.example files
-// to match the convention used in Web projects.
+// Configure the Secrets Gradle Plugin.
+//
+// `.env` is intentionally git-ignored and can contain a real Gemini key for
+// local development. `local.defaults.properties` is safe to commit and is
+// used as a build-time fallback so CI does not fail when `.env` is absent.
 secrets {
   propertiesFileName = ".env"
-  defaultPropertiesFileName = ".env.example"
+  defaultPropertiesFileName = "local.defaults.properties"
   ignoreList.add("FIREBASE_APPCHECK_DEBUG_TOKEN")
 }
 
