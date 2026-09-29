@@ -18,3 +18,8 @@ APK را دانلود و روی گوشی نصب کنید. چون این نسخه
 
 ## نکته
 در این پروژه `gradlew` داخل فایل اولیه وجود نداشت، بنابراین workflow فعلاً Gradle 9.3.1 را با `gradle/actions/setup-gradle` آماده می‌کند. Android Studio نیز می‌تواند Gradle Wrapper را برای توسعه محلی مدیریت کند.
+
+
+### CI test runtime
+
+The Robolectric test is configured for Android API 36. Robolectric 4.16 supports API 36, but Android 16/API 36 requires Java 21, so GitHub Actions uses JDK 21 for the test/build job.
