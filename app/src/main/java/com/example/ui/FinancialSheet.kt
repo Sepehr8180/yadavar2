@@ -89,9 +89,9 @@ fun FinancialSheet(
     var errorText by remember { mutableStateOf<String?>(null) }
 
     fun parseDate(y: String, m: String, d: String): JalaliDate? {
-        val year = normalizedDigits(y).toIntOrNull()
-        val month = normalizedDigits(m).toIntOrNull()
-        val day = normalizedDigits(d).toIntOrNull()
+        val year = normalizeDigits(y).toIntOrNull()
+        val month = normalizeDigits(m).toIntOrNull()
+        val day = normalizeDigits(d).toIntOrNull()
         if (year == null || month == null || day == null || month !in 1..12) return null
         if (day !in 1..JalaliCalendar.monthLength(year, month)) return null
         return JalaliDate(year, month, day)
@@ -141,7 +141,7 @@ fun FinancialSheet(
 
             OutlinedTextField(
                 value = amountText,
-                onValueChange = { amountText = normalizedDigits(it).filter(Char::isDigit) },
+                onValueChange = { amountText = normalizeDigits(it).filter(Char::isDigit) },
                 label = { Text("مبلغ (تومان)") },
                 placeholder = { Text("مثلاً ۵۰۰۰۰۰۰") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
@@ -229,7 +229,7 @@ fun FinancialSheet(
             Spacer(modifier = Modifier.height(18.dp))
             Button(
                 onClick = {
-                    val amount = normalizedDigits(amountText).toLongOrNull() ?: 0L
+                    val amount = normalizeDigits(amountText).toLongOrNull() ?: 0L
                     val startDate = parseDate(yearText, monthText, dayText)
                     val endDate = if (isMonthly && hasEndDate) parseDate(endYearText, endMonthText, endDayText) else null
                     errorText = when {
