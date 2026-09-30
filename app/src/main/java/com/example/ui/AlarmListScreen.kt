@@ -22,7 +22,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Alarm
 import androidx.compose.material.icons.filled.NotificationsActive
-import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -62,8 +61,6 @@ fun AlarmListScreen(
     onToggleDone: (AlarmEntity) -> Unit,
     onEdit: (AlarmEntity) -> Unit,
     onDelete: (AlarmEntity) -> Unit,
-    onTestAlarm: (AlarmEntity) -> Unit,
-    onTestAlarmNow: () -> Unit,
     onAddNewAlarm: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -72,7 +69,7 @@ fun AlarmListScreen(
 
     // Find next upcoming active alarm
     val nextAlarm = remember(alarms) {
-        alarms.filter { it.isEnabled && !it.isDone }
+        alarms.filter { it.hasAlarm && it.isEnabled && !it.isDone }
             .minByOrNull { scheduler.calculateNextTriggerMillis(it) }
     }
 
@@ -141,32 +138,13 @@ fun AlarmListScreen(
                             }
                             Spacer(modifier = Modifier.width(10.dp))
                             Text(
-                                text = "وضعیت آلارم‌های گوشی",
+                                text = "وضعیت یادآورهای زمان‌دار",
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                         }
 
-                        // Test Alarm Button
-                        Button(
-                            onClick = onTestAlarmNow,
-                            shape = RoundedCornerShape(12.dp),
-                            modifier = Modifier
-                                .height(38.dp)
-                                .testTag("test_alarm_quick_button"),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.primary
-                            )
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.PlayArrow,
-                                contentDescription = null,
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("تست زنگ گوشی", fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                        }
                     }
 
                     Spacer(modifier = Modifier.height(14.dp))
@@ -199,7 +177,7 @@ fun AlarmListScreen(
                         }
                     } else {
                         Text(
-                            text = "در حال حاضر هیچ آلارم فعالی تنظیم نشده است.",
+                            text = "در حال حاضر هیچ یادآور زمان‌داری فعال نیست.",
                             fontSize = 13.sp,
                             color = MaterialTheme.colorScheme.outline
                         )
@@ -262,7 +240,7 @@ fun AlarmListScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "لیست آلارم‌ها (${JalaliCalendar.toPersianDigits(filteredAlarms.size.toString())})",
+                    text = "لیست یادآورها (${JalaliCalendar.toPersianDigits(filteredAlarms.size.toString())})",
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onBackground
@@ -301,7 +279,7 @@ fun AlarmListScreen(
                         )
                         Spacer(modifier = Modifier.height(12.dp))
                         Text(
-                            text = "هیچ آلارمی با این فیلتر وجود ندارد",
+                            text = "هیچ یادآوری با این فیلتر وجود ندارد",
                             fontSize = 15.sp,
                             fontWeight = FontWeight.Medium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -311,7 +289,7 @@ fun AlarmListScreen(
                             onClick = onAddNewAlarm,
                             shape = RoundedCornerShape(12.dp)
                         ) {
-                            Text("افزودن اولین آلارم")
+                            Text("افزودن اولین یادآور")
                         }
                     }
                 }
@@ -324,8 +302,7 @@ fun AlarmListScreen(
                     onToggleDone = { onToggleDone(alarm) },
                     onEdit = { onEdit(alarm) },
                     onDelete = { onDelete(alarm) },
-                    onTestAlarm = { onTestAlarm(alarm) }
-                )
+                                    )
             }
         }
 

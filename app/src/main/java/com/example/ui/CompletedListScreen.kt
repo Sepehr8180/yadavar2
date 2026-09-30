@@ -100,8 +100,7 @@ fun CompletedListScreen(
                     onToggleEnabled = { /* Already done */ },
                     onToggleDone = { onToggleDone(alarm) },
                     onEdit = {},
-                    onDelete = { onDelete(alarm) },
-                    onTestAlarm = {}
+                    onDelete = { onDelete(alarm) }
                 )
             }
         }

@@ -27,3 +27,8 @@ val PriorityUrgent = Color(0xFFD32F2F)
 val PriorityHigh = Color(0xFFE65100)
 val PriorityNormal = Color(0xFF0288D1)
 val PriorityLow = Color(0xFF43A047)
+
+// Financial / payment calendar color
+val FinancialPrimary = Color(0xFF00796B)
+val FinancialContainer = Color(0xFFD7F1EC)
+val FinancialOnContainer = Color(0xFF003D36)

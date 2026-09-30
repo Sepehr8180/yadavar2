@@ -47,3 +47,20 @@ class ExampleUnitTest {
         assertEquals("۱۴۰۵/۰۷/۰۷", JalaliCalendar.toPersianDigits("1405/07/07"))
     }
 }
+
+class WeekdayParsingTest {
+    @Test
+    fun explicitPersianWeekdayIsMappedCorrectly() {
+        assertEquals(5, com.example.util.GeminiAiParser.detectWeekday("پنجشنبه ساعت ۹"))
+        assertEquals(4, com.example.util.GeminiAiParser.detectWeekday("چهارشنبه"))
+        assertEquals(1, com.example.util.GeminiAiParser.detectWeekday("یک‌شنبه"))
+        assertEquals(0, com.example.util.GeminiAiParser.detectWeekday("شنبه"))
+    }
+
+    @Test
+    fun nextOrSameWeekdayDoesNotShiftBackOneDay() {
+        val currentDay = JalaliDate(1405, 7, 7) // Tuesday
+        val thursday = com.example.util.JalaliCalendar.nextOrSameDayOfWeek(currentDay, 5)
+        assertEquals(JalaliDate(1405, 7, 9), thursday)
+    }
+}

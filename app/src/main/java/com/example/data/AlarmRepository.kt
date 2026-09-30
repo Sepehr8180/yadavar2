@@ -4,7 +4,8 @@ import kotlinx.coroutines.flow.Flow
 
 class AlarmRepository(
     private val alarmDao: AlarmDao,
-    private val birthdayDao: BirthdayDao
+    private val birthdayDao: BirthdayDao,
+    private val financialDao: FinancialDao
 ) {
     // --- Alarms ---
     val allAlarms: Flow<List<AlarmEntity>> = alarmDao.getAllAlarms()
@@ -44,6 +45,17 @@ class AlarmRepository(
     suspend fun setAlarmDone(id: Long, done: Boolean) {
         alarmDao.updateAlarmDone(id, done)
     }
+
+    // --- Financial ---
+    val allFinancialItems: Flow<List<FinancialEntity>> = financialDao.getAllFinancialItems()
+
+    suspend fun insertFinancialItem(item: FinancialEntity): Long = financialDao.insertFinancialItem(item)
+
+    suspend fun updateFinancialItem(item: FinancialEntity) = financialDao.updateFinancialItem(item)
+
+    suspend fun deleteFinancialItem(item: FinancialEntity) = financialDao.deleteFinancialItem(item)
+
+    suspend fun deleteFinancialItemById(id: Long) = financialDao.deleteFinancialItemById(id)
 
     // --- Birthdays ---
     val allBirthdays: Flow<List<BirthdayEntity>> = birthdayDao.getAllBirthdays()

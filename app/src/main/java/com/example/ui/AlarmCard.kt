@@ -21,7 +21,6 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.NotificationsActive
-import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material.icons.filled.Vibration
 import androidx.compose.material3.Card
@@ -61,7 +60,6 @@ fun AlarmCard(
     onToggleDone: () -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
-    onTestAlarm: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -133,7 +131,7 @@ fun AlarmCard(
                     Spacer(modifier = Modifier.width(6.dp))
 
                     Text(
-                        text = alarm.formattedTime(),
+                        text = if (alarm.hasAlarm) alarm.formattedTime() else "—",
                         fontSize = 32.sp,
                         fontWeight = FontWeight.Bold,
                         color = if (alarm.isEnabled && !alarm.isDone)
@@ -144,16 +142,29 @@ fun AlarmCard(
                     )
                 }
 
-                // Switch
-                Switch(
-                    checked = alarm.isEnabled && !alarm.isDone,
-                    onCheckedChange = { onToggleEnabled() },
-                    modifier = Modifier.testTag("toggle_alarm_${alarm.id}"),
-                    colors = SwitchDefaults.colors(
-                        checkedThumbColor = MaterialTheme.colorScheme.primary,
-                        checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
+                if (alarm.hasAlarm) {
+                    Switch(
+                        checked = alarm.isEnabled && !alarm.isDone,
+                        onCheckedChange = { onToggleEnabled() },
+                        modifier = Modifier.testTag("toggle_alarm_${alarm.id}"),
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = MaterialTheme.colorScheme.primary,
+                            checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
+                        )
                     )
-                )
+                } else {
+                    Surface(
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Text(
+                            text = "بدون زنگ",
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.outline,
+                            modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp)
+                        )
+                    }
+                }
             }
 
             Spacer(modifier = Modifier.height(6.dp))
@@ -171,7 +182,7 @@ fun AlarmCard(
             )
 
             // Remaining Time badge
-            if (remainingText.isNotEmpty()) {
+            if (alarm.hasAlarm && remainingText.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(6.dp))
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -264,20 +275,6 @@ fun AlarmCard(
                 Row(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Quick Test Alarm button
-                    IconButton(
-                        onClick = onTestAlarm,
-                        modifier = Modifier.size(34.dp),
-                        content = {
-                            Icon(
-                                imageVector = Icons.Default.PlayArrow,
-                                contentDescription = "تست زنگ آلارم",
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(20.dp)
-                            )
-                        }
-                    )
-
                     IconButton(
                         onClick = onEdit,
                         modifier = Modifier.size(34.dp),

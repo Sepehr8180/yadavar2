@@ -177,6 +177,13 @@ object JalaliCalendar {
 
     fun dayOfWeekName(dow: Int): String = DOW_NAMES.getOrElse(dow) { "" }
 
+    /** Returns today when it matches the requested weekday, otherwise the next occurrence. */
+    fun nextOrSameDayOfWeek(date: JalaliDate, targetDow: Int): JalaliDate {
+        val currentDow = dayOfWeek(date.year, date.month, date.day)
+        val delta = (targetDow - currentDow + 7) % 7
+        return addDays(date, delta)
+    }
+
     fun addDays(date: JalaliDate, days: Int): JalaliDate {
         return d2j(j2d(date.year, date.month, date.day) + days)
     }
@@ -200,6 +207,11 @@ object JalaliCalendar {
 
     fun formatTime(hour: Int, minute: Int, persian: Boolean = true): String {
         val raw = String.format("%02d:%02d", hour, minute)
+        return if (persian) toPersianDigits(raw) else raw
+    }
+
+    fun formatNumber(value: Long, persian: Boolean = true): String {
+        val raw = String.format(java.util.Locale.US, "%,d", value)
         return if (persian) toPersianDigits(raw) else raw
     }
 }

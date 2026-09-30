@@ -24,7 +24,7 @@ class AlarmScheduler(private val context: Context) {
     }
 
     fun scheduleAlarm(alarm: AlarmEntity) {
-        if (!alarm.isEnabled || alarm.isDone) {
+        if (!alarm.hasAlarm || !alarm.isEnabled || alarm.isDone) {
             cancelAlarm(alarm.id)
             return
         }

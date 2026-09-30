@@ -20,6 +20,7 @@ data class AlarmEntity(
     val prio: String = "normal", // "urgent", "high", "normal", "low"
     val tag: String = "شخصی", // "کار", "شخصی", "روتین", "خونه", "سلامت", "تولد"
     val isEnabled: Boolean = true,
+    val hasAlarm: Boolean = true, // If false, keep this item for the Eisenhower matrix without ringing.
     val isVibrate: Boolean = true,
     val snoozeMinutes: Int = 10,
     val isDone: Boolean = false,

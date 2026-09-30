@@ -1,25 +1,19 @@
-# راه‌اندازی روی GitHub
+# راه‌اندازی GitHub برای Yadavar
 
-## 1) ساخت repository
-در GitHub یک repository جدید بسازید. برای پروژه شخصی می‌تواند Private باشد.
+## ساخت APK
 
-## 2) Upload
-کل محتوای همین پوشه را داخل repository قرار دهید، طوری که `settings.gradle.kts` و پوشه `app` در root repository باشند.
+Workflow موجود در `.github/workflows/android.yml` با JDK 21 اجرا می‌شود، تست‌ها را اجرا می‌کند و در صورت موفقیت `app-debug.apk` را به‌عنوان Artifact منتشر می‌کند.
 
-## 3) Push
-پس از push، GitHub Actions فایل `.github/workflows/android.yml` را اجرا می‌کند.
+از مسیر زیر می‌توانید اجرای دستی را شروع کنید:
 
-## 4) گرفتن APK
-از مسیر:
-`Actions → Android CI → آخرین اجرا → Artifacts → yadavar-debug-apk`
+`Actions → Android CI → Run workflow`
 
-## 5) نصب روی گوشی
-APK را دانلود و روی گوشی نصب کنید. چون این نسخه Debug است، برای تست شخصی مناسب است.
+## فایل‌های محلی و Secretها
 
-## نکته
-در این پروژه `gradlew` داخل فایل اولیه وجود نداشت، بنابراین workflow فعلاً Gradle 9.3.1 را با `gradle/actions/setup-gradle` آماده می‌کند. Android Studio نیز می‌تواند Gradle Wrapper را برای توسعه محلی مدیریت کند.
+- `.env` برای کلید Gemini روی سیستم محلی است و نباید commit شود.
+- `local.defaults.properties` فقط placeholder دارد و برای Build بدون کلید واقعی استفاده می‌شود.
+- فایل `google-services.json` را در repository عمومی قرار ندهید مگر اینکه پروژه Firebase و محدودیت‌های کلیدهای آن را آگاهانه پیکربندی کرده باشید.
 
+## ساخت Release
 
-### CI test runtime
-
-The Robolectric test is configured for Android API 36. Robolectric 4.16 supports API 36, but Android 16/API 36 requires Java 21, so GitHub Actions uses JDK 21 for the test/build job.
+برای Release باید keystore را خارج از repository نگه دارید و اطلاعات signing را از GitHub Secrets وارد workflow کنید. این نسخه در حال حاضر فقط Debug APK تولید می‌کند.

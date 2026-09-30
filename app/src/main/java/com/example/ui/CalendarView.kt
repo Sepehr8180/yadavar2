@@ -1,7 +1,6 @@
 package com.example.ui
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -24,6 +23,7 @@ import androidx.compose.material.icons.filled.Cake
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Payments
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -47,6 +47,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.AlarmEntity
 import com.example.data.BirthdayEntity
+import com.example.data.FinancialEntity
+import com.example.ui.theme.FinancialContainer
+import com.example.ui.theme.FinancialOnContainer
+import com.example.ui.theme.FinancialPrimary
 import com.example.util.JalaliCalendar
 import com.example.util.JalaliDate
 
@@ -57,6 +61,7 @@ fun CalendarView(
     selectedDate: JalaliDate,
     alarms: List<AlarmEntity>,
     birthdays: List<BirthdayEntity> = emptyList(),
+    financialItems: List<FinancialEntity> = emptyList(),
     onSelectDate: (JalaliDate) -> Unit,
     onPrevMonth: () -> Unit,
     onNextMonth: () -> Unit,
@@ -66,7 +71,6 @@ fun CalendarView(
     onToggleAlarmDone: (AlarmEntity) -> Unit,
     onEditAlarm: (AlarmEntity) -> Unit,
     onDeleteAlarm: (AlarmEntity) -> Unit,
-    onTestAlarm: (AlarmEntity) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val today = remember { JalaliCalendar.today() }
@@ -74,386 +78,352 @@ fun CalendarView(
     val daysInMonth = remember(currentYear, currentMonth) {
         JalaliCalendar.monthLength(currentYear, currentMonth)
     }
-    // Day of week of the 1st day of month (0 = Saturday, ..., 6 = Friday)
     val firstDow = remember(currentYear, currentMonth) {
         JalaliCalendar.dayOfWeek(currentYear, currentMonth, 1)
     }
 
-    // Set of days in this month that have alarms
     val alarmDays = remember(alarms, currentYear, currentMonth) {
-        val set = mutableSetOf<Int>()
-        for (a in alarms) {
-            if (a.isDaily) {
-                for (d in 1..daysInMonth) set.add(d)
-            } else if (a.repeatDays.isNotEmpty()) {
-                val repDays = a.parseRepeatDays()
-                for (d in 1..daysInMonth) {
-                    val dow = JalaliCalendar.dayOfWeek(currentYear, currentMonth, d)
-                    if (dow in repDays) set.add(d)
+        buildSet {
+            alarms.forEach { a ->
+                when {
+                    a.isDaily -> for (d in 1..daysInMonth) add(d)
+                    a.repeatDays.isNotEmpty() -> {
+                        val days = a.parseRepeatDays()
+                        for (d in 1..daysInMonth) {
+                            if (JalaliCalendar.dayOfWeek(currentYear, currentMonth, d) in days) add(d)
+                        }
+                    }
+                    a.jalaliYear == currentYear && a.jalaliMonth == currentMonth -> add(a.jalaliDay)
                 }
-            } else if (a.jalaliYear == currentYear && a.jalaliMonth == currentMonth) {
-                set.add(a.jalaliDay)
             }
         }
-        set
     }
 
-    // Map of days in this month that have birthdays
+    val financeDays = remember(financialItems, currentYear, currentMonth) {
+        financialItems.mapNotNull { it.occurrenceInMonth(currentYear, currentMonth)?.day }.toSet()
+    }
+
     val birthdayDaysMap = remember(birthdays, currentMonth) {
-        birthdays.filter { it.month == currentMonth }
-            .groupBy { it.day }
+        birthdays.filter { it.month == currentMonth }.groupBy { it.day }
     }
 
-    // Filter alarms for selected date
+    val selectedDow = JalaliCalendar.dayOfWeek(selectedDate.year, selectedDate.month, selectedDate.day)
     val alarmsForSelectedDate = remember(alarms, selectedDate) {
-        val selectedDow = JalaliCalendar.dayOfWeek(selectedDate.year, selectedDate.month, selectedDate.day)
         alarms.filter { a ->
-            a.isDaily ||
-            a.parseRepeatDays().contains(selectedDow) ||
-            (a.jalaliYear == selectedDate.year && a.jalaliMonth == selectedDate.month && a.jalaliDay == selectedDate.day)
+            a.isDaily || a.parseRepeatDays().contains(selectedDow) ||
+                (a.jalaliYear == selectedDate.year && a.jalaliMonth == selectedDate.month && a.jalaliDay == selectedDate.day)
         }
     }
 
-    // Birthdays on selected date
     val birthdaysForSelectedDate = remember(birthdays, selectedDate) {
         birthdays.filter { it.month == selectedDate.month && it.day == selectedDate.day }
     }
 
+    val financialForSelectedDate = remember(financialItems, selectedDate) {
+        financialItems.filter { it.occursOn(selectedDate) }
+    }
+
+    val monthFinancialTotal = remember(financialItems, currentYear, currentMonth) {
+        financialItems.sumOf { item -> if (item.occurrenceInMonth(currentYear, currentMonth) != null) item.amount else 0L }
+    }
+
     LazyColumn(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(horizontal = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        modifier = modifier.fillMaxSize().padding(horizontal = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
-        // Calendar Card
         item {
             Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp),
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                 shape = RoundedCornerShape(20.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
             ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp)
-                ) {
-                    // Header Month & Controls
+                Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                text = "$monthName ${JalaliCalendar.toPersianDigits(currentYear.toString())}",
-                                fontSize = 20.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                        }
-
+                        Text(
+                            text = "$monthName ${JalaliCalendar.toPersianDigits(currentYear.toString())}",
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold
+                        )
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             OutlinedButton(
                                 onClick = onToday,
                                 shape = RoundedCornerShape(12.dp),
                                 modifier = Modifier.height(34.dp),
                                 contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp)
-                            ) {
-                                Text("امروز", fontSize = 12.sp)
+                            ) { Text("امروز", fontSize = 12.sp) }
+                            IconButton(onClick = onPrevMonth, modifier = Modifier.size(36.dp)) {
+                                Icon(Icons.Default.ChevronRight, "ماه قبل")
                             }
-
-                            Spacer(modifier = Modifier.width(6.dp))
-
-                            IconButton(
-                                onClick = onPrevMonth,
-                                modifier = Modifier.size(36.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.ChevronRight,
-                                    contentDescription = "ماه قبل"
-                                )
-                            }
-
-                            IconButton(
-                                onClick = onNextMonth,
-                                modifier = Modifier.size(36.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.ChevronLeft,
-                                    contentDescription = "ماه بعد"
-                                )
+                            IconButton(onClick = onNextMonth, modifier = Modifier.size(36.dp)) {
+                                Icon(Icons.Default.ChevronLeft, "ماه بعد")
                             }
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(14.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
 
-                    // Weekday names
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceAround
                     ) {
-                        for (dow in JalaliCalendar.DOW_SHORT) {
+                        JalaliCalendar.DOW_SHORT.forEachIndexed { index, dow ->
                             Text(
                                 text = dow,
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = if (dow == "ج") MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
+                                color = if (index == 6) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
                                 textAlign = TextAlign.Center,
                                 modifier = Modifier.width(38.dp)
                             )
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(10.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
 
-                    // Calendar Days Grid (6 rows x 7 cols)
-                    val rows = 6
-
-                    for (r in 0 until rows) {
+                    repeat(6) { r ->
                         Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 3.dp),
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp),
                             horizontalArrangement = Arrangement.SpaceAround
                         ) {
-                            for (c in 0 until 7) {
+                            repeat(7) { c ->
                                 val cellIndex = r * 7 + c
                                 val dayNumber = cellIndex - firstDow + 1
-
                                 if (dayNumber in 1..daysInMonth) {
-                                    val isToday = currentYear == today.year && currentMonth == today.month && dayNumber == today.day
-                                    val isSelected = currentYear == selectedDate.year && currentMonth == selectedDate.month && dayNumber == selectedDate.day
-                                    val hasAlarm = alarmDays.contains(dayNumber)
+                                    val cellDate = JalaliDate(currentYear, currentMonth, dayNumber)
+                                    val isToday = cellDate == today
+                                    val isSelected = cellDate == selectedDate
+                                    val hasAlarm = dayNumber in alarmDays
+                                    val hasFinance = dayNumber in financeDays
                                     val hasBirthday = birthdayDaysMap.containsKey(dayNumber)
-                                    val isFriday = c == 6
 
                                     Box(
                                         modifier = Modifier
-                                            .size(40.dp)
+                                            .size(42.dp)
                                             .clip(CircleShape)
                                             .background(
                                                 when {
                                                     isSelected -> MaterialTheme.colorScheme.primary
-                                                    isToday -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
-                                                    hasBirthday -> Color(0xFFFFF3E0) // Warm festive birthday tint
+                                                    isToday -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.65f)
                                                     else -> Color.Transparent
                                                 }
                                             )
-                                            .then(
-                                                if (hasBirthday && !isSelected) {
-                                                    Modifier.border(1.5.dp, Color(0xFFFF9800), CircleShape)
-                                                } else Modifier
-                                            )
-                                            .clickable {
-                                                onSelectDate(JalaliDate(currentYear, currentMonth, dayNumber))
-                                            },
+                                            .clickable { onSelectDate(cellDate) },
                                         contentAlignment = Alignment.Center
                                     ) {
                                         Column(
                                             horizontalAlignment = Alignment.CenterHorizontally,
                                             verticalArrangement = Arrangement.Center
                                         ) {
-                                            // Day Number
                                             Text(
                                                 text = JalaliCalendar.toPersianDigits(dayNumber.toString()),
                                                 fontSize = 13.sp,
-                                                fontWeight = if (isSelected || isToday || hasBirthday) FontWeight.Bold else FontWeight.Normal,
+                                                fontWeight = if (isSelected || isToday || hasBirthday || hasFinance) FontWeight.Bold else FontWeight.Normal,
                                                 color = when {
                                                     isSelected -> MaterialTheme.colorScheme.onPrimary
+                                                    hasFinance -> FinancialPrimary
                                                     hasBirthday -> Color(0xFFE65100)
-                                                    isFriday -> MaterialTheme.colorScheme.primary
+                                                    c == 6 -> MaterialTheme.colorScheme.primary
                                                     else -> MaterialTheme.colorScheme.onSurface
                                                 }
                                             )
-
-                                            // Distinct Indicator row (Birthday Cake / Alarm dot)
                                             Row(
-                                                horizontalArrangement = Arrangement.Center,
+                                                horizontalArrangement = Arrangement.spacedBy(2.dp),
                                                 verticalAlignment = Alignment.CenterVertically
                                             ) {
-                                                if (hasBirthday) {
-                                                    Text(
-                                                        text = "🎂",
-                                                        fontSize = 9.sp,
-                                                        lineHeight = 9.sp
-                                                    )
-                                                }
+                                                if (hasBirthday) Text("🎂", fontSize = 8.sp, lineHeight = 8.sp)
                                                 if (hasAlarm) {
                                                     Box(
-                                                        modifier = Modifier
-                                                            .size(4.dp)
-                                                            .clip(CircleShape)
-                                                            .background(
-                                                                if (isSelected) MaterialTheme.colorScheme.onPrimary
-                                                                else MaterialTheme.colorScheme.secondary
-                                                            )
+                                                        Modifier.size(4.dp).clip(CircleShape).background(
+                                                            if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.secondary
+                                                        )
+                                                    )
+                                                }
+                                                if (hasFinance) {
+                                                    Box(
+                                                        Modifier.size(4.dp).clip(CircleShape).background(
+                                                            if (isSelected) MaterialTheme.colorScheme.onPrimary else FinancialPrimary
+                                                        )
                                                     )
                                                 }
                                             }
                                         }
                                     }
-                                } else {
-                                    // Empty padding cell
-                                    Box(modifier = Modifier.size(40.dp))
-                                }
+                                } else Box(modifier = Modifier.size(42.dp))
                             }
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(10.dp))
-
-                    // Legend: Shows Birthday & Alarm indicators guide
+                    Spacer(modifier = Modifier.height(8.dp))
                     Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 4.dp),
+                        modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.Center,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(text = "🎂 تولدها (رنگ نارنجی و کیک)", fontSize = 11.sp, color = Color(0xFFE65100), fontWeight = FontWeight.Medium)
-                        Spacer(modifier = Modifier.width(16.dp))
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(modifier = Modifier.size(6.dp).clip(CircleShape).background(MaterialTheme.colorScheme.secondary))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(text = "آلارم‌ها و یادآورها", fontSize = 11.sp, color = MaterialTheme.colorScheme.outline)
-                        }
+                        Text("🎂 تولد", fontSize = 10.sp, color = Color(0xFFE65100))
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Box(Modifier.size(5.dp).clip(CircleShape).background(MaterialTheme.colorScheme.secondary))
+                        Spacer(modifier = Modifier.width(3.dp))
+                        Text("یادآور", fontSize = 10.sp, color = MaterialTheme.colorScheme.outline)
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Box(Modifier.size(5.dp).clip(CircleShape).background(FinancialPrimary))
+                        Spacer(modifier = Modifier.width(3.dp))
+                        Text("قسط / بدهی", fontSize = 10.sp, color = FinancialPrimary)
                     }
                 }
             }
         }
 
-        // Distinct Birthday Card for Selected Date (Celebration banner)
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = FinancialContainer)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(14.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.Payments, null, tint = FinancialPrimary, modifier = Modifier.size(22.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Column {
+                            Text("مجموع اقساط این ماه", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = FinancialOnContainer)
+                            Text("بر اساس سررسیدهای ${monthName}", fontSize = 11.sp, color = FinancialOnContainer.copy(alpha = 0.75f))
+                        }
+                    }
+                    Text(
+                        "${JalaliCalendar.formatNumber(monthFinancialTotal)} تومان",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = FinancialPrimary
+                    )
+                }
+            }
+        }
+
         if (birthdaysForSelectedDate.isNotEmpty()) {
-            item {
-                for (bday in birthdaysForSelectedDate) {
-                    val age = bday.year?.let { selectedDate.year - it }
-                    val ageText = if (age != null) " (امسال $age ساله می‌شود)" else ""
-
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF4E5)),
-                        border = androidx.compose.foundation.BorderStroke(1.5.dp, Color(0xFFFFB74D))
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(14.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(text = "🎂", fontSize = 28.sp)
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Column {
-                                Text(
-                                    text = "تولد ${bday.name}$ageText 🎉",
-                                    fontSize = 16.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color(0xFFB25000)
-                                )
-                                if (bday.notes.isNotBlank()) {
-                                    Spacer(modifier = Modifier.height(2.dp))
-                                    Text(
-                                        text = bday.notes,
-                                        fontSize = 12.sp,
-                                        color = Color(0xFF8D4004)
-                                    )
-                                }
-                            }
+            items(birthdaysForSelectedDate) { bday ->
+                val age = bday.year?.let { selectedDate.year - it }
+                val ageText = if (age != null) " (امسال $age ساله می‌شود)" else ""
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF4E5))
+                ) {
+                    Row(Modifier.fillMaxWidth().padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Text("🎂", fontSize = 28.sp)
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column {
+                            Text("تولد ${bday.name}$ageText 🎉", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color(0xFFB25000))
+                            if (bday.notes.isNotBlank()) Text(bday.notes, fontSize = 12.sp, color = Color(0xFF8D4004))
                         }
                     }
                 }
             }
         }
 
-        // Section header for selected date
         item {
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 4.dp),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column {
+                    Text(selectedDate.formatted(includeDayName = true), fontSize = 17.sp, fontWeight = FontWeight.Bold)
                     Text(
-                        text = selectedDate.formatted(includeDayName = true),
-                        fontSize = 17.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onBackground
-                    )
-                    Text(
-                        text = "${JalaliCalendar.toPersianDigits(alarmsForSelectedDate.size.toString())} آلارم تنظیم شده",
-                        fontSize = 13.sp,
+                        "${JalaliCalendar.toPersianDigits(alarmsForSelectedDate.size.toString())} یادآور · ${JalaliCalendar.toPersianDigits(financialForSelectedDate.size.toString())} مورد مالی",
+                        fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.outline
                     )
                 }
-
                 Button(
                     onClick = { onAddAlarmForDate(selectedDate) },
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.testTag("add_alarm_for_date_button")
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = "افزودن آلارم",
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text("آلارم جدید", fontSize = 13.sp)
+                    Icon(Icons.Default.Add, "افزودن یادآور", modifier = Modifier.size(17.dp))
+                    Spacer(modifier = Modifier.width(5.dp))
+                    Text("یادآور", fontSize = 12.sp)
                 }
             }
         }
 
-        // Alarms for selected date list
-        if (alarmsForSelectedDate.isEmpty()) {
+        if (financialForSelectedDate.isNotEmpty()) {
+            items(financialForSelectedDate, key = { "finance-${it.id}" }) { item ->
+                FinancialCalendarCard(item)
+            }
+        }
+
+        if (alarmsForSelectedDate.isEmpty() && financialForSelectedDate.isEmpty()) {
             item {
                 Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 12.dp),
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp),
                     shape = RoundedCornerShape(16.dp),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
                 ) {
                     Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(28.dp),
+                        modifier = Modifier.fillMaxWidth().padding(28.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.CalendarToday,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.outline,
-                            modifier = Modifier.size(40.dp)
-                        )
+                        Icon(Icons.Default.CalendarToday, null, tint = MaterialTheme.colorScheme.outline, modifier = Modifier.size(40.dp))
                         Spacer(modifier = Modifier.height(10.dp))
-                        Text(
-                            text = "برای این روز یادآوری یا آلارمی وجود ندارد",
-                            fontSize = 15.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        Text("برای این روز موردی ثبت نشده است", fontSize = 15.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
-        } else {
-            items(alarmsForSelectedDate, key = { it.id }) { alarm ->
+        }
+
+        if (alarmsForSelectedDate.isNotEmpty()) {
+            items(alarmsForSelectedDate, key = { "alarm-${it.id}" }) { alarm ->
                 AlarmCard(
                     alarm = alarm,
                     onToggleEnabled = { onToggleAlarmEnabled(alarm) },
                     onToggleDone = { onToggleAlarmDone(alarm) },
                     onEdit = { onEditAlarm(alarm) },
-                    onDelete = { onDeleteAlarm(alarm) },
-                    onTestAlarm = { onTestAlarm(alarm) }
+                    onDelete = { onDeleteAlarm(alarm) }
                 )
             }
         }
 
-        item {
-            Spacer(modifier = Modifier.height(80.dp))
+        item { Spacer(modifier = Modifier.height(80.dp)) }
+    }
+}
+
+@Composable
+private fun FinancialCalendarCard(item: FinancialEntity) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = FinancialContainer),
+        border = androidx.compose.foundation.BorderStroke(1.dp, FinancialPrimary.copy(alpha = 0.35f))
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(14.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                Box(
+                    modifier = Modifier.size(38.dp).background(FinancialPrimary, CircleShape),
+                    contentAlignment = Alignment.Center
+                ) { Icon(Icons.Default.Payments, null, tint = Color.White, modifier = Modifier.size(20.dp)) }
+                Spacer(modifier = Modifier.width(10.dp))
+                Column {
+                    Text(item.title, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = FinancialOnContainer)
+                    Text(
+                        if (item.isMonthly) "قسط ماهانه" else "پرداخت یک‌باره",
+                        fontSize = 11.sp,
+                        color = FinancialOnContainer.copy(alpha = 0.75f)
+                    )
+                }
+            }
+            Text("${item.formattedAmount()} تومان", fontSize = 14.sp, fontWeight = FontWeight.ExtraBold, color = FinancialPrimary)
         }
     }
 }

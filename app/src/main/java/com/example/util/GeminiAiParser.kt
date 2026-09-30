@@ -148,6 +148,45 @@ object GeminiAiParser {
         )
     }
 
+    /** Detect an explicit Persian weekday. Index: Saturday=0 ... Friday=6. */
+    fun detectWeekday(rawText: String): Int? {
+        val normalized = rawText.replace("‌", "").replace("ي", "ی").replace("ك", "ک")
+        return when {
+            normalized.contains("یکشنبه") || normalized.contains("یکشنب") -> 1
+            normalized.contains("دوشنبه") -> 2
+            normalized.contains("سهشنبه") -> 3
+            normalized.contains("چهارشنبه") -> 4
+            normalized.contains("پنجشنبه") -> 5
+            normalized.contains("جمعه") -> 6
+            normalized.contains("شنبه") -> 0
+            else -> null
+        }
+    }
+
+    /** Natural-language phrases meaning the user wants a matrix reminder without a phone alarm. */
+    fun requestsNoAlarm(rawText: String): Boolean {
+        val normalized = rawText.replace("‌", " ").lowercase()
+        return listOf(
+            "بدون آلارم",
+            "بدون زنگ",
+            "لازم نیست زنگ",
+            "لازم نیست آلارم",
+            "زنگ نمی‌خوام",
+            "آلارم نمی‌خوام",
+            "زنگ نزن",
+            "آلارم نذار",
+            "آلارم نگذار",
+            "فقط در ماتریس",
+            "فقط توی ماتریس",
+            "فقط در آیزنهاور",
+            "فقط توی آیزنهاور",
+            "در ماتریس بیاد",
+            "تو ماتریس بیاد",
+            "در ماتریس باشد",
+            "توی ماتریس باشه"
+        ).any { normalized.contains(it) }
+    }
+
     /**
      * Local heuristic Persian parser (runs instantly even offline or without API key)
      */
@@ -182,6 +221,10 @@ object GeminiAiParser {
                 text = text.replace("کم اهمیت", " ").replace("بعدا", " ").replace("بعداً", " ")
             }
         }
+
+        // Weekday extraction. An explicit weekday means a weekly reminder even if
+        // the user did not literally say "هر هفته".
+        val explicitDow = detectWeekday(text)
 
         // Repeat extraction
         var repeat = "none"
@@ -241,11 +284,31 @@ object GeminiAiParser {
             .replace("عصر", "")
             .replace("صبح", "")
             .replace("شب", "")
+            .replace("شنبه", "")
+            .replace("یک‌شنبه", "").replace("یکشنبه", "")
+            .replace("دوشنبه", "")
+            .replace("سه‌شنبه", "").replace("سهشنبه", "")
+            .replace("چهارشنبه", "")
+            .replace("پنج‌شنبه", "").replace("پنجشنبه", "")
+            .replace("جمعه", "")
+            .replace("بدون آلارم", "")
+            .replace("بدون زنگ", "")
+            .replace("فقط در ماتریس", "")
+            .replace("فقط توی ماتریس", "")
+            .replace("فقط در آیزنهاور", "")
+            .replace("فقط توی آیزنهاور", "")
+            .replace("در ماتریس بیاد", "")
+            .replace("توی ماتریس باشه", "")
             .trim()
             .ifBlank { raw.trim() }
 
         if (tags.isEmpty()) {
             tags.add("شخصی")
+        }
+
+        if (explicitDow != null) {
+            targetDate = JalaliCalendar.nextOrSameDayOfWeek(today, explicitDow)
+            repeat = "weekly"
         }
 
         return AiParsedResult(

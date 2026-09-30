@@ -23,7 +23,7 @@ class YadavarApp : Application() {
     override fun onCreate() {
         super.onCreate()
         database = YadavarDatabase.getInstance(this)
-        repository = AlarmRepository(database.alarmDao(), database.birthdayDao())
+        repository = AlarmRepository(database.alarmDao(), database.birthdayDao(), database.financialDao())
         alarmScheduler = AlarmScheduler(this)
 
         createNotificationChannels()

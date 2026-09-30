@@ -84,7 +84,8 @@ fun AddEditAlarmSheet(
         prio: String,
         tag: String,
         isVibrate: Boolean,
-        snoozeMinutes: Int
+        snoozeMinutes: Int,
+        hasAlarm: Boolean
     ) -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -135,6 +136,10 @@ fun AddEditAlarmSheet(
         mutableIntStateOf(editingAlarm?.snoozeMinutes ?: 10)
     }
 
+    var hasAlarm by remember {
+        mutableStateOf(editingAlarm?.hasAlarm ?: true)
+    }
+
     val tagsList = listOf("کار", "شخصی", "روتین", "خونه", "سلامت", "مطالعه", "تولد")
 
     ModalBottomSheet(
@@ -156,7 +161,7 @@ fun AddEditAlarmSheet(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = if (editingAlarm == null) "⏰ تنظیم آلارم و یادآور جدید" else "✏️ ویرایش آلارم",
+                    text = if (editingAlarm == null) "📝 ثبت یادآور جدید" else "✏️ ویرایش یادآور",
                     fontSize = 19.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
@@ -168,83 +173,118 @@ fun AddEditAlarmSheet(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Time Selector Card with Big Digits
+            // Alarm mode: a reminder can live in the Eisenhower matrix without ringing.
             Card(
-                shape = RoundedCornerShape(18.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)),
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(14.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f)
+                )
             ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(18.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(14.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = "زمان زنگ آلارم",
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.outline
-                    )
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Text(
-                        text = JalaliCalendar.formatTime(hour, minute),
-                        fontSize = 46.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    // Hour and Minute Controls
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceEvenly
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("ساعت: ${JalaliCalendar.toPersianDigits(hour.toString())}", fontSize = 13.sp)
-                            Slider(
-                                value = hour.toFloat(),
-                                onValueChange = { hour = it.toInt() },
-                                valueRange = 0f..23f,
-                                steps = 22,
-                                modifier = Modifier.width(140.dp)
-                            )
-                        }
-
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("دقیقه: ${JalaliCalendar.toPersianDigits(minute.toString())}", fontSize = 13.sp)
-                            Slider(
-                                value = minute.toFloat(),
-                                onValueChange = { minute = it.toInt() },
-                                valueRange = 0f..59f,
-                                steps = 58,
-                                modifier = Modifier.width(140.dp)
-                            )
-                        }
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = if (hasAlarm) "زنگ گوشی فعال است" else "فقط یادآوری / ماتریس آیزنهاور",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = if (hasAlarm) "در زمان تعیین‌شده صدای آلارم پخش می‌شود." else "هیچ زنگی پخش نمی‌شود و مورد در ماتریس باقی می‌ماند.",
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.outline
+                        )
                     }
+                    Switch(checked = hasAlarm, onCheckedChange = { hasAlarm = it })
+                }
+            }
 
-                    // Quick Time Preset Chips
-                    Row(
+            Spacer(modifier = Modifier.height(14.dp))
+
+            if (hasAlarm) {
+                // Time Selector Card with Big Digits
+                Card(
+                    shape = RoundedCornerShape(18.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .horizontalScroll(rememberScrollState()),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            .padding(18.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        PresetChip("۰۷:۰۰ صبح") { hour = 7; minute = 0 }
-                        PresetChip("۰۸:۳۰ صبح") { hour = 8; minute = 30 }
-                        PresetChip("۱۲:۳۰ ظهر") { hour = 12; minute = 30 }
-                        PresetChip("۱۷:۰۰ عصر") { hour = 17; minute = 0 }
-                        PresetChip("۲۲:۰۰ شب") { hour = 22; minute = 0 }
-                        PresetChip("+۳۰ دقیقه") {
-                            val c = Calendar.getInstance().apply { add(Calendar.MINUTE, 30) }
-                            hour = c.get(Calendar.HOUR_OF_DAY)
-                            minute = c.get(Calendar.MINUTE)
+                        Text(
+                            text = "زمان زنگ آلارم",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.outline
+                        )
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Text(
+                            text = JalaliCalendar.formatTime(hour, minute),
+                            fontSize = 46.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        // Hour and Minute Controls
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceEvenly
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text("ساعت: ${JalaliCalendar.toPersianDigits(hour.toString())}", fontSize = 13.sp)
+                                Slider(
+                                    value = hour.toFloat(),
+                                    onValueChange = { hour = it.toInt() },
+                                    valueRange = 0f..23f,
+                                    steps = 22,
+                                    modifier = Modifier.width(140.dp)
+                                )
+                            }
+
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text("دقیقه: ${JalaliCalendar.toPersianDigits(minute.toString())}", fontSize = 13.sp)
+                                Slider(
+                                    value = minute.toFloat(),
+                                    onValueChange = { minute = it.toInt() },
+                                    valueRange = 0f..59f,
+                                    steps = 58,
+                                    modifier = Modifier.width(140.dp)
+                                )
+                            }
+                        }
+
+                        // Quick Time Preset Chips
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            PresetChip("۰۷:۰۰ صبح") { hour = 7; minute = 0 }
+                            PresetChip("۰۸:۳۰ صبح") { hour = 8; minute = 30 }
+                            PresetChip("۱۲:۳۰ ظهر") { hour = 12; minute = 30 }
+                            PresetChip("۱۷:۰۰ عصر") { hour = 17; minute = 0 }
+                            PresetChip("۲۲:۰۰ شب") { hour = 22; minute = 0 }
+                            PresetChip("+۳۰ دقیقه") {
+                                val c = Calendar.getInstance().apply { add(Calendar.MINUTE, 30) }
+                                hour = c.get(Calendar.HOUR_OF_DAY)
+                                minute = c.get(Calendar.MINUTE)
+                            }
                         }
                     }
                 }
+
+
             }
 
             Spacer(modifier = Modifier.height(18.dp))
@@ -422,49 +462,53 @@ fun AddEditAlarmSheet(
 
             Spacer(modifier = Modifier.height(18.dp))
 
-            // Settings: Vibration & Snooze Duration
-            Card(
-                shape = RoundedCornerShape(14.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(modifier = Modifier.padding(14.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = Icons.Default.Vibration,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(20.dp)
+            if (hasAlarm) {
+                // Settings: Vibration & Snooze Duration
+                Card(
+                    shape = RoundedCornerShape(14.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(14.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Default.Vibration,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("لرزش (ویبره گوشی)", fontSize = 14.sp)
+                            }
+                            Switch(
+                                checked = isVibrate,
+                                onCheckedChange = { isVibrate = it }
                             )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("لرزش (ویبره گوشی)", fontSize = 14.sp)
                         }
-                        Switch(
-                            checked = isVibrate,
-                            onCheckedChange = { isVibrate = it }
-                        )
-                    }
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(8.dp))
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text("مدت زمان اسنوز (تعویق):", fontSize = 13.sp)
-                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            SnoozeChip("۵ دقیقه", 5, snoozeMinutes == 5) { snoozeMinutes = 5 }
-                            SnoozeChip("۱۰ دقیقه", 10, snoozeMinutes == 10) { snoozeMinutes = 10 }
-                            SnoozeChip("۱۵ دقیقه", 15, snoozeMinutes == 15) { snoozeMinutes = 15 }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text("مدت زمان اسنوز (تعویق):", fontSize = 13.sp)
+                            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                SnoozeChip("۵ دقیقه", 5, snoozeMinutes == 5) { snoozeMinutes = 5 }
+                                SnoozeChip("۱۰ دقیقه", 10, snoozeMinutes == 10) { snoozeMinutes = 10 }
+                                SnoozeChip("۱۵ دقیقه", 15, snoozeMinutes == 15) { snoozeMinutes = 15 }
+                            }
                         }
                     }
                 }
+
+
             }
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -487,7 +531,8 @@ fun AddEditAlarmSheet(
                         prio,
                         tag,
                         isVibrate,
-                        snoozeMinutes
+                        snoozeMinutes,
+                        hasAlarm
                     )
                 },
                 modifier = Modifier
@@ -506,7 +551,7 @@ fun AddEditAlarmSheet(
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = if (editingAlarm == null) "تنظیم و فعال‌سازی آلارم گوشی" else "ذخیره تغییرات",
+                    text = if (editingAlarm == null) { if (hasAlarm) "تنظیم آلارم" else "ثبت یادآور" } else "ذخیره تغییرات",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold
                 )
