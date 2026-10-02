@@ -18,6 +18,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Payments
@@ -35,6 +37,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.FinancialEntity
@@ -55,6 +58,7 @@ fun FinancialScreen(
     onAdd: () -> Unit,
     onEdit: (FinancialEntity) -> Unit,
     onDelete: (FinancialEntity) -> Unit,
+    onTogglePaid: (FinancialEntity, JalaliDate) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val monthName = JalaliCalendar.MON_NAMES[currentMonth - 1]
@@ -64,6 +68,10 @@ fun FinancialScreen(
         }
     }
     val total = monthItems.sumOf { it.first.amount }
+    val remaining = monthItems.sumOf { (item, occurrence) ->
+        if (item.isPaidOn(occurrence)) 0L else item.amount
+    }
+    val paidTotal = total - remaining
 
     LazyColumn(
         modifier = modifier.fillMaxSize().padding(horizontal = 16.dp),
@@ -101,7 +109,23 @@ fun FinancialScreen(
                         fontWeight = FontWeight.ExtraBold,
                         color = FinancialPrimary
                     )
-                    Spacer(modifier = Modifier.height(4.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        SummaryMetric(
+                            title = "باقی‌مانده این ماه",
+                            value = "${JalaliCalendar.formatNumber(remaining)} تومان",
+                            modifier = Modifier.weight(1f)
+                        )
+                        SummaryMetric(
+                            title = "پرداخت‌شده",
+                            value = "${JalaliCalendar.formatNumber(paidTotal)} تومان",
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(5.dp))
                     Text(
                         "${JalaliCalendar.toPersianDigits(monthItems.size.toString())} سررسید در $monthName",
                         fontSize = 12.sp,
@@ -147,7 +171,13 @@ fun FinancialScreen(
             }
         } else {
             items(monthItems, key = { "financial-${it.first.id}" }) { (item, occurrence) ->
-                FinancialItemCard(item, occurrence, onEdit = { onEdit(item) }, onDelete = { onDelete(item) })
+                FinancialItemCard(
+                    item = item,
+                    occurrence = occurrence,
+                    onEdit = { onEdit(item) },
+                    onDelete = { onDelete(item) },
+                    onTogglePaid = { onTogglePaid(item, occurrence) }
+                )
             }
         }
 
@@ -157,17 +187,42 @@ fun FinancialScreen(
     }
 }
 
+
+@Composable
+private fun SummaryMetric(
+    title: String,
+    value: String,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier,
+        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.55f),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 9.dp)) {
+            Text(title, fontSize = 10.sp, color = FinancialOnContainer.copy(alpha = 0.78f))
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(value, fontSize = 15.sp, fontWeight = FontWeight.ExtraBold, color = FinancialPrimary)
+        }
+    }
+}
+
 @Composable
 private fun FinancialItemCard(
     item: FinancialEntity,
     occurrence: JalaliDate,
     onEdit: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onTogglePaid: () -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        colors = CardDefaults.cardColors(
+            containerColor = if (item.isPaidOn(occurrence)) {
+                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
+            } else MaterialTheme.colorScheme.surface
+        ),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Column(modifier = Modifier.fillMaxWidth().padding(15.dp)) {
@@ -179,7 +234,13 @@ private fun FinancialItemCard(
                 }
                 Spacer(modifier = Modifier.width(10.dp))
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(item.title, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    Text(
+                        item.title,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        textDecoration = if (item.isPaidOn(occurrence)) TextDecoration.LineThrough else TextDecoration.None
+                    )
                     Text(
                         "سررسید: ${JalaliCalendar.toPersianDigits(occurrence.day.toString())} ${JalaliCalendar.MON_NAMES[occurrence.month - 1]}",
                         fontSize = 11.sp,
@@ -201,6 +262,14 @@ private fun FinancialItemCard(
                     )
                 }
                 Spacer(modifier = Modifier.weight(1f))
+                IconButton(onClick = onTogglePaid, modifier = Modifier.size(38.dp)) {
+                    Icon(
+                        imageVector = if (item.isPaidOn(occurrence)) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked,
+                        contentDescription = if (item.isPaidOn(occurrence)) "علامت‌گذاری به‌عنوان پرداخت‌نشده" else "علامت‌گذاری به‌عنوان پرداخت‌شده",
+                        tint = if (item.isPaidOn(occurrence)) FinancialPrimary else MaterialTheme.colorScheme.outline,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
                 IconButton(onClick = onEdit, modifier = Modifier.size(34.dp)) {
                     Icon(Icons.Default.Edit, "ویرایش", tint = MaterialTheme.colorScheme.outline, modifier = Modifier.size(18.dp))
                 }

@@ -24,7 +24,7 @@ class AlarmScheduler(private val context: Context) {
     }
 
     fun scheduleAlarm(alarm: AlarmEntity) {
-        if (!alarm.hasAlarm || !alarm.isEnabled || alarm.isDone) {
+        if (!alarm.hasAlarm || !alarm.hasDate || !alarm.isEnabled || alarm.isDone) {
             cancelAlarm(alarm.id)
             return
         }
@@ -144,6 +144,7 @@ class AlarmScheduler(private val context: Context) {
     }
 
     fun calculateNextTriggerMillis(alarm: AlarmEntity): Long {
+        if (!alarm.hasDate) return Long.MAX_VALUE
         val now = Calendar.getInstance()
         val repeatDays = alarm.parseRepeatDays()
 

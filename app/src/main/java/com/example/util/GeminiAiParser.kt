@@ -164,6 +164,28 @@ object GeminiAiParser {
     }
 
     /** Natural-language phrases meaning the user wants a matrix reminder without a phone alarm. */
+    /** Natural-language phrases meaning the task has no specific date and should stay in the matrix. */
+    fun requestsNoDate(rawText: String): Boolean {
+        val normalized = rawText.replace("‌", " ").lowercase()
+        return listOf(
+            "بدون تاریخ",
+            "تاریخ ندار",
+            "تاریخ مشخص ندار",
+            "تاریخ مشخص نمی",
+            "تاریخ نمی‌خوام",
+            "تاریخ نمیخوام",
+            "تاریخ نذار",
+            "تاریخ نگذار",
+            "فقط در ماتریس",
+            "فقط توی ماتریس",
+            "فقط در آیزنهاور",
+            "فقط توی آیزنهاور",
+            "در ماتریس بیاد",
+            "توی ماتریس باشه",
+            "تو ماتریس بیاد"
+        ).any { normalized.contains(it) }
+    }
+
     fun requestsNoAlarm(rawText: String): Boolean {
         val normalized = rawText.replace("‌", " ").lowercase()
         return listOf(
@@ -293,6 +315,9 @@ object GeminiAiParser {
             .replace("جمعه", "")
             .replace("بدون آلارم", "")
             .replace("بدون زنگ", "")
+            .replace("بدون تاریخ", "")
+            .replace("تاریخ مشخص ندارم", "")
+            .replace("تاریخ مشخص ندار", "")
             .replace("فقط در ماتریس", "")
             .replace("فقط توی ماتریس", "")
             .replace("فقط در آیزنهاور", "")

@@ -260,6 +260,18 @@ fun YadavarMainScreen(viewModel: MainViewModel) {
         },
         floatingActionButton = {
             when (selectedTab) {
+                MainViewModel.TAB_ALARMS -> ExtendedFloatingActionButton(
+                    onClick = { viewModel.openAddAlarm() },
+                    shape = RoundedCornerShape(16.dp),
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.testTag("add_alarm_fab")
+                ) {
+                    Icon(Icons.Default.Add, "یادآور جدید")
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("یادآور جدید", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                }
+
                 MainViewModel.TAB_BIRTHDAYS -> ExtendedFloatingActionButton(
                     onClick = { viewModel.openAddBirthday() },
                     shape = RoundedCornerShape(16.dp),
@@ -282,18 +294,6 @@ fun YadavarMainScreen(viewModel: MainViewModel) {
                     Icon(Icons.Default.Add, "قسط جدید")
                     Spacer(modifier = Modifier.width(6.dp))
                     Text("ثبت قسط / بدهی", fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                }
-
-                else -> ExtendedFloatingActionButton(
-                    onClick = { viewModel.openAddAlarm() },
-                    shape = RoundedCornerShape(16.dp),
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary,
-                    modifier = Modifier.testTag("add_alarm_fab")
-                ) {
-                    Icon(Icons.Default.Add, "یادآور جدید")
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text("یادآور جدید", fontWeight = FontWeight.Bold, fontSize = 14.sp)
                 }
             }
         }
@@ -365,7 +365,8 @@ fun YadavarMainScreen(viewModel: MainViewModel) {
                         onNextMonth = viewModel::nextMonth,
                         onAdd = { viewModel.openAddFinancial() },
                         onEdit = viewModel::openEditFinancial,
-                        onDelete = viewModel::deleteFinancial
+                        onDelete = viewModel::deleteFinancial,
+                        onTogglePaid = viewModel::toggleFinancialPaid
                     )
 
                     MainViewModel.TAB_COMPLETED -> CompletedListScreen(
@@ -390,9 +391,9 @@ fun YadavarMainScreen(viewModel: MainViewModel) {
             initialDate = selectedDate,
             defaultPriority = initialQuadrant,
             onDismiss = viewModel::closeAddEditSheet,
-            onSave = { id, title, hour, minute, isDaily, repeatDays, jalaliDate, prio, tag, isVibrate, snoozeMinutes, hasAlarm ->
+            onSave = { id, title, hour, minute, isDaily, repeatDays, jalaliDate, hasDate, prio, tag, isVibrate, snoozeMinutes, hasAlarm ->
                 viewModel.saveAlarm(
-                    id, title, hour, minute, isDaily, repeatDays, jalaliDate,
+                    id, title, hour, minute, isDaily, repeatDays, jalaliDate, hasDate,
                     prio, tag, isVibrate, snoozeMinutes, hasAlarm
                 )
                 coroutineScope.launch {

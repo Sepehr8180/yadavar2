@@ -9,7 +9,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 
 @Database(
     entities = [AlarmEntity::class, BirthdayEntity::class, FinancialEntity::class],
-    version = 3,
+    version = 4,
     exportSchema = false
 )
 abstract class YadavarDatabase : RoomDatabase() {
@@ -45,6 +45,13 @@ abstract class YadavarDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE alarms ADD COLUMN hasDate INTEGER NOT NULL DEFAULT 1")
+                db.execSQL("ALTER TABLE financial_items ADD COLUMN paidDates TEXT NOT NULL DEFAULT ''")
+            }
+        }
+
         fun getInstance(context: Context): YadavarDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -52,7 +59,7 @@ abstract class YadavarDatabase : RoomDatabase() {
                     YadavarDatabase::class.java,
                     "yadavar_alarms.db"
                 )
-                    .addMigrations(MIGRATION_2_3)
+                    .addMigrations(MIGRATION_2_3, MIGRATION_3_4)
                     .fallbackToDestructiveMigration()
                     .build()
                 INSTANCE = instance

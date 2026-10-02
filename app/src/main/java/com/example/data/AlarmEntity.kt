@@ -17,6 +17,7 @@ data class AlarmEntity(
     val jalaliYear: Int,
     val jalaliMonth: Int,
     val jalaliDay: Int,
+    val hasDate: Boolean = true,
     val prio: String = "normal", // "urgent", "high", "normal", "low"
     val tag: String = "شخصی", // "کار", "شخصی", "روتین", "خونه", "سلامت", "تولد"
     val isEnabled: Boolean = true,
@@ -26,7 +27,7 @@ data class AlarmEntity(
     val isDone: Boolean = false,
     val createdAt: Long = System.currentTimeMillis()
 ) {
-    fun toJalaliDate(): JalaliDate = JalaliDate(jalaliYear, jalaliMonth, jalaliDay)
+    fun toJalaliDate(): JalaliDate? = if (hasDate) JalaliDate(jalaliYear, jalaliMonth, jalaliDay) else null
 
     fun formattedTime(persian: Boolean = true): String {
         return JalaliCalendar.formatTime(hour, minute, persian)
@@ -40,6 +41,7 @@ data class AlarmEntity(
     }
 
     fun getRepeatDaysLabel(): String {
+        if (!hasDate) return "بدون تاریخ"
         if (isDaily) return "هر روز"
         val days = parseRepeatDays()
         if (days.isEmpty()) {

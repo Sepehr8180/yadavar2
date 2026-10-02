@@ -117,7 +117,7 @@ fun EisenhowerMatrixScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 4.dp, vertical = 2.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
@@ -125,11 +125,6 @@ fun EisenhowerMatrixScreen(
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
-                )
-                Text(
-                    text = "👈 برای تغییر اولویت، تسک را نگه دارید و به بخش دیگر بکشید",
-                    fontSize = 11.sp,
-                    color = MaterialTheme.colorScheme.outline
                 )
             }
 
@@ -566,21 +561,14 @@ fun DraggableMatrixItem(
 
                 Spacer(modifier = Modifier.width(4.dp))
 
-                Column {
-                    Text(
-                        text = task.title,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Text(
-                        text = "${task.formattedTime()} · #${task.tag}",
-                        fontSize = 9.sp,
-                        color = MaterialTheme.colorScheme.outline
-                    )
-                }
+                Text(
+                    text = task.title,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
             }
 
             Box {

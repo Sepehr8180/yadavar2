@@ -40,3 +40,7 @@
 ## ساخت نسخه Release
 
 برای APK/AAB قابل انتشار در Google Play باید signing key خودتان را جداگانه نگهداری و در GitHub Secrets تنظیم کنید. فایل keystore نباید وارد repository شود.
+
+## Current version
+
+App version: **1.1** (versionCode 2). Database version: **4**, with migration from the previous version so existing Room data is preserved when the update is signed with the same Android signing key.

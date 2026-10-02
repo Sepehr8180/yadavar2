@@ -85,6 +85,7 @@ fun AddEditAlarmSheet(
         tag: String,
         isVibrate: Boolean,
         snoozeMinutes: Int,
+        hasDate: Boolean,
         hasAlarm: Boolean
     ) -> Unit
 ) {
@@ -118,6 +119,10 @@ fun AddEditAlarmSheet(
 
     var selectedJalaliDate by remember {
         mutableStateOf(editingAlarm?.toJalaliDate() ?: initialDate)
+    }
+
+    var hasDate by remember {
+        mutableStateOf(editingAlarm?.hasDate ?: true)
     }
 
     var prio by remember {
@@ -199,6 +204,47 @@ fun AddEditAlarmSheet(
                         )
                     }
                     Switch(checked = hasAlarm, onCheckedChange = { hasAlarm = it })
+                }
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // Optional date: some matrix tasks do not have a specific date.
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(14.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = if (hasDate) {
+                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.28f)
+                    } else {
+                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f)
+                    }
+                )
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(14.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = if (hasDate) "تاریخ مشخص دارد" else "بدون تاریخ مشخص",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = if (hasDate) "این مورد در تقویم نمایش داده می‌شود." else "برای کارهایی که فقط می‌خواهی در ماتریس آیزنهاور بمانند.",
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.outline
+                        )
+                    }
+                    Switch(
+                        checked = hasDate,
+                        onCheckedChange = { enabled ->
+                            hasDate = enabled
+                            if (!enabled) hasAlarm = false
+                        }
+                    )
                 }
             }
 
@@ -302,10 +348,11 @@ fun AddEditAlarmSheet(
                 singleLine = true
             )
 
-            Spacer(modifier = Modifier.height(18.dp))
+            if (hasDate) {
+                Spacer(modifier = Modifier.height(18.dp))
 
-            // Repeat Mode Selector
-            Text(
+                // Repeat Mode Selector
+                Text(
                 text = "زمان‌بندی تکرار",
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Bold,
@@ -408,6 +455,9 @@ fun AddEditAlarmSheet(
                         }
                     }
                 }
+            }
+
+                Spacer(modifier = Modifier.height(18.dp))
             }
 
             Spacer(modifier = Modifier.height(18.dp))
@@ -516,7 +566,7 @@ fun AddEditAlarmSheet(
             // Action Buttons
             Button(
                 onClick = {
-                    val repeatDaysStr = if (repeatMode == 2) {
+                    val repeatDaysStr = if (hasDate && repeatMode == 2) {
                         selectedRepeatDays.sorted().joinToString(",")
                     } else ""
 
@@ -525,9 +575,10 @@ fun AddEditAlarmSheet(
                         title,
                         hour,
                         minute,
-                        repeatMode == 1,
+                        hasDate && repeatMode == 1,
                         repeatDaysStr,
                         selectedJalaliDate,
+                        hasDate,
                         prio,
                         tag,
                         isVibrate,

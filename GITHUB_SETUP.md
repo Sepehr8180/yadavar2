@@ -17,3 +17,7 @@ Workflow موجود در `.github/workflows/android.yml` با JDK 21 اجرا م
 ## ساخت Release
 
 برای Release باید keystore را خارج از repository نگه دارید و اطلاعات signing را از GitHub Secrets وارد workflow کنید. این نسخه در حال حاضر فقط Debug APK تولید می‌کند.
+
+
+### Update version
+The current app version is versionName **1.1** / versionCode **2**. Room database version is **4** and includes a migration from v3 that preserves alarms, birthdays, financial items, and adds paid-occurrence tracking.

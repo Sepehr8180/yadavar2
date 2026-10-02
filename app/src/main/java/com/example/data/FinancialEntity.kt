@@ -19,6 +19,7 @@ data class FinancialEntity(
     val endJalaliMonth: Int? = null,
     val endJalaliDay: Int? = null,
     val notes: String = "",
+    val paidDates: String = "",
     val createdAt: Long = System.currentTimeMillis()
 ) {
     fun startDate(): JalaliDate = JalaliDate(jalaliYear, jalaliMonth, jalaliDay)
@@ -59,6 +60,24 @@ data class FinancialEntity(
     }
 
     fun occursOn(date: JalaliDate): Boolean = occurrenceInMonth(date.year, date.month) == date
+
+    fun isPaidOn(date: JalaliDate): Boolean = paidDates
+        .split(",")
+        .asSequence()
+        .map { it.trim() }
+        .any { it == date.toKey() }
+
+    fun setPaidOn(date: JalaliDate, paid: Boolean): FinancialEntity {
+        val keys = paidDates
+            .split(",")
+            .asSequence()
+            .map { it.trim() }
+            .filter { it.isNotBlank() }
+            .toMutableSet()
+        val key = date.toKey()
+        if (paid) keys.add(key) else keys.remove(key)
+        return copy(paidDates = keys.sorted().joinToString(","))
+    }
 
     fun formattedAmount(): String = JalaliCalendar.formatNumber(amount)
 

@@ -203,6 +203,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         isDaily: Boolean,
         repeatDays: String,
         jalaliDate: JalaliDate,
+        hasDate: Boolean,
         prio: String,
         tag: String,
         isVibrate: Boolean,
@@ -217,14 +218,16 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 minute = minute,
                 isDaily = isDaily,
                 repeatDays = repeatDays,
-                jalaliYear = jalaliDate.year,
-                jalaliMonth = jalaliDate.month,
-                jalaliDay = jalaliDate.day,
+                jalaliYear = if (hasDate) jalaliDate.year else 0,
+                jalaliMonth = if (hasDate) jalaliDate.month else 0,
+                jalaliDay = if (hasDate) jalaliDate.day else 0,
+                hasDate = hasDate,
                 prio = prio,
                 tag = tag.ifBlank { "شخصی" },
                 isEnabled = true,
-                hasAlarm = hasAlarm,
+                hasAlarm = hasAlarm && hasDate,
                 isVibrate = isVibrate,
+
                 snoozeMinutes = snoozeMinutes,
                 isDone = false
             )
@@ -297,10 +300,17 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 endJalaliYear = endDate?.year,
                 endJalaliMonth = endDate?.month,
                 endJalaliDay = endDate?.day,
-                notes = notes.trim()
+                notes = notes.trim(),
+                paidDates = _editingFinancial.value?.paidDates ?: ""
             )
             repository.insertFinancialItem(item)
             closeFinancialSheet()
+        }
+    }
+
+    fun toggleFinancialPaid(item: FinancialEntity, occurrence: JalaliDate) {
+        viewModelScope.launch {
+            repository.updateFinancialItem(item.setPaidOn(occurrence, !item.isPaidOn(occurrence)))
         }
     }
 
@@ -328,19 +338,21 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 } else ""
 
                 val noAlarm = GeminiAiParser.requestsNoAlarm(text)
+                val noDate = GeminiAiParser.requestsNoDate(text)
                 val alarm = AlarmEntity(
                     title = parsed.title,
                     hour = parsed.hour,
                     minute = parsed.minute,
                     isDaily = parsed.repeat == "daily",
                     repeatDays = repeatDays,
-                    jalaliYear = correctedDate.year,
-                    jalaliMonth = correctedDate.month,
-                    jalaliDay = correctedDate.day,
+                    jalaliYear = if (noDate) 0 else correctedDate.year,
+                    jalaliMonth = if (noDate) 0 else correctedDate.month,
+                    jalaliDay = if (noDate) 0 else correctedDate.day,
+                    hasDate = !noDate,
                     prio = parsed.prio,
                     tag = parsed.tags.firstOrNull() ?: "شخصی",
                     isEnabled = true,
-                    hasAlarm = !noAlarm
+                    hasAlarm = !noAlarm && !noDate
                 )
 
                 val savedId = repository.insertAlarm(alarm)
@@ -355,7 +367,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     "low" -> "کم"
                     else -> "عادی"
                 }
-                val modeText = if (noAlarm) "فقط در ماتریس آیزنهاور" else "آلارم گوشی"
+                val modeText = when {
+                    noDate -> "فقط در ماتریس آیزنهاور · بدون تاریخ"
+                    noAlarm -> "یادآور بدون زنگ · با تاریخ"
+                    else -> "آلارم گوشی"
+                }
                 onComplete("✅ «${parsed.title}» ثبت شد — $modeText ($formattedTime · $tagsStr · اولویت $prioLabel)")
             } catch (e: Exception) {
                 onComplete("خطا در پردازش هوش مصنوعی: ${e.message}")
