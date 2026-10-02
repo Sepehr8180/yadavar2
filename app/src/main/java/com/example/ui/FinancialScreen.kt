@@ -34,10 +34,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.FinancialEntity
@@ -215,17 +215,22 @@ private fun FinancialItemCard(
     onDelete: () -> Unit,
     onTogglePaid: () -> Unit
 ) {
+    val isPaid = item.isPaidOn(occurrence)
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (item.isPaidOn(occurrence)) {
-                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
-            } else MaterialTheme.colorScheme.surface
+            containerColor = MaterialTheme.colorScheme.surface
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
-        Column(modifier = Modifier.fillMaxWidth().padding(15.dp)) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(15.dp)
+                .then(if (isPaid) Modifier.alpha(0.5f) else Modifier)
+        ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Surface(color = FinancialContainer, shape = CircleShape) {
                     Box(modifier = Modifier.size(40.dp), contentAlignment = Alignment.Center) {
@@ -238,8 +243,7 @@ private fun FinancialItemCard(
                         item.title,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        textDecoration = if (item.isPaidOn(occurrence)) TextDecoration.LineThrough else TextDecoration.None
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
                         "سررسید: ${JalaliCalendar.toPersianDigits(occurrence.day.toString())} ${JalaliCalendar.MON_NAMES[occurrence.month - 1]}",

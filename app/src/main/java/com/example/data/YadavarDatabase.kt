@@ -60,7 +60,6 @@ abstract class YadavarDatabase : RoomDatabase() {
                     "yadavar_alarms.db"
                 )
                     .addMigrations(MIGRATION_2_3, MIGRATION_3_4)
-                    .fallbackToDestructiveMigration()
                     .build()
                 INSTANCE = instance
                 instance

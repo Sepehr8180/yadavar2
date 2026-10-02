@@ -198,12 +198,20 @@ fun AddEditAlarmSheet(
                             fontWeight = FontWeight.Bold
                         )
                         Text(
-                            text = if (hasAlarm) "در زمان تعیین‌شده صدای آلارم پخش می‌شود." else "هیچ زنگی پخش نمی‌شود و مورد در ماتریس باقی می‌ماند.",
+                            text = when {
+                                hasAlarm -> "در زمان تعیین‌شده صدای آلارم پخش می‌شود."
+                                !hasDate -> "برای فعال کردن زنگ، ابتدا «تاریخ مشخص دارد» را روشن کنید."
+                                else -> "هیچ زنگی پخش نمی‌شود و مورد در ماتریس باقی می‌ماند."
+                            },
                             fontSize = 12.sp,
                             color = MaterialTheme.colorScheme.outline
                         )
                     }
-                    Switch(checked = hasAlarm, onCheckedChange = { hasAlarm = it })
+                    Switch(
+                        checked = hasAlarm,
+                        enabled = hasDate,
+                        onCheckedChange = { if (hasDate) hasAlarm = it }
+                    )
                 }
             }
 
