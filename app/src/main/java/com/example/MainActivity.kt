@@ -391,7 +391,7 @@ fun YadavarMainScreen(viewModel: MainViewModel) {
             initialDate = selectedDate,
             defaultPriority = initialQuadrant,
             onDismiss = viewModel::closeAddEditSheet,
-            onSave = { id, title, hour, minute, isDaily, repeatDays, jalaliDate, hasDate, prio, tag, isVibrate, snoozeMinutes, hasAlarm ->
+            onSave = { id, title, hour, minute, isDaily, repeatDays, jalaliDate, prio, tag, isVibrate, snoozeMinutes, hasDate, hasAlarm ->
                 viewModel.saveAlarm(
                     id, title, hour, minute, isDaily, repeatDays, jalaliDate, hasDate,
                     prio, tag, isVibrate, snoozeMinutes, hasAlarm
