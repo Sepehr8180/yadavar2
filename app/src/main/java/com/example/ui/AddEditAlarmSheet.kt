@@ -578,11 +578,11 @@ fun AddEditAlarmSheet(
                         hasDate && repeatMode == 1,
                         repeatDaysStr,
                         selectedJalaliDate,
-                        hasDate,
                         prio,
                         tag,
                         isVibrate,
                         snoozeMinutes,
+                        hasDate,
                         hasAlarm
                     )
                 },
