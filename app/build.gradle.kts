@@ -22,15 +22,15 @@ android {
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }
 
+  // The app is intentionally signed with one fixed local keystore.
+  // This keeps the signing certificate identical across GitHub Actions builds,
+  // so future APKs can be installed as updates over the previous release.
   signingConfigs {
     create("release") {
-      val keystorePath = System.getenv("KEYSTORE_PATH")
-      if (!keystorePath.isNullOrBlank()) {
-        storeFile = file(keystorePath)
-        storePassword = System.getenv("STORE_PASSWORD")
-        keyAlias = System.getenv("KEY_ALIAS") ?: "yadavar"
-        keyPassword = System.getenv("KEY_PASSWORD")
-      }
+      storeFile = rootProject.file("yadavar-release.jks")
+      storePassword = "YadavarUpdate2026!"
+      keyAlias = "yadavar"
+      keyPassword = "YadavarUpdate2026!"
     }
   }
 

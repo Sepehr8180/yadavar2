@@ -50,3 +50,7 @@ App version: **1.2** (`versionCode 3`). Database version: **4**.
 کلید API را داخل GitHub repository commit نکنید. فایل `.env` عمداً در `.gitignore` قرار گرفته است.
 
 در معماری فعلی، اگر یک کلید Gemini داخل APK قرار بگیرد، قابل استخراج است؛ بنابراین برای انتشار عمومی بهتر است API از یک backend امن یا معماری مناسب Firebase استفاده کند. برای استفاده شخصی، می‌توانید کلید را روی خود دستگاه وارد کنید.
+
+
+## Release updates
+This repository contains a fixed release keystore used by GitHub Actions. Keep `yadavar-release.jks` unchanged. Increase `versionCode` for future updates.
