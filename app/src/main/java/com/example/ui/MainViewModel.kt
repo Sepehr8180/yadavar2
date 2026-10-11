@@ -208,7 +208,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         tag: String,
         isVibrate: Boolean,
         snoozeMinutes: Int,
-        hasAlarm: Boolean
+        hasAlarm: Boolean,
+        showInMatrix: Boolean = false
     ) {
         viewModelScope.launch {
             val alarm = AlarmEntity(
@@ -227,7 +228,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 isEnabled = true,
                 hasAlarm = hasAlarm && hasDate,
                 isVibrate = isVibrate,
-
+                showInMatrix = showInMatrix || !hasDate,
                 snoozeMinutes = snoozeMinutes,
                 isDone = false
             )
@@ -265,7 +266,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     prio = "high",
                     tag = "تولد",
                     isEnabled = true,
-                    hasAlarm = true
+                    hasAlarm = true,
+                    showInMatrix = false
                 )
                 val aId = repository.insertAlarm(bdayAlarm)
                 scheduler.scheduleAlarm(bdayAlarm.copy(id = aId))
@@ -339,6 +341,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
                 val noAlarm = GeminiAiParser.requestsNoAlarm(text)
                 val noDate = GeminiAiParser.requestsNoDate(text)
+                val showInMatrix = noDate || GeminiAiParser.requestsMatrix(text)
                 val alarm = AlarmEntity(
                     title = parsed.title,
                     hour = parsed.hour,
@@ -352,7 +355,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     prio = parsed.prio,
                     tag = parsed.tags.firstOrNull() ?: "شخصی",
                     isEnabled = true,
-                    hasAlarm = !noAlarm && !noDate
+                    hasAlarm = !noAlarm && !noDate,
+                    showInMatrix = showInMatrix
                 )
 
                 val savedId = repository.insertAlarm(alarm)

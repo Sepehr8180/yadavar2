@@ -38,6 +38,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.FinancialEntity
@@ -243,7 +244,8 @@ private fun FinancialItemCard(
                         item.title,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = MaterialTheme.colorScheme.onSurface,
+                        textDecoration = if (isPaid) TextDecoration.LineThrough else TextDecoration.None
                     )
                     Text(
                         "سررسید: ${JalaliCalendar.toPersianDigits(occurrence.day.toString())} ${JalaliCalendar.MON_NAMES[occurrence.month - 1]}",
@@ -251,7 +253,13 @@ private fun FinancialItemCard(
                         color = MaterialTheme.colorScheme.outline
                     )
                 }
-                Text("${item.formattedAmount()} تومان", fontSize = 14.sp, fontWeight = FontWeight.ExtraBold, color = FinancialPrimary)
+                Text(
+                    "${item.formattedAmount()} تومان",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = FinancialPrimary,
+                    textDecoration = if (isPaid) TextDecoration.LineThrough else TextDecoration.None
+                )
             }
 
             Spacer(modifier = Modifier.height(10.dp))

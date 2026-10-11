@@ -12,63 +12,27 @@ Workflow در `.github/workflows/android.yml` با JDK 21 اجرا می‌شود
 
 ## امضای پایدار برای Update
 
-برای اینکه نسخه جدید Android روی نسخه قبلی به‌صورت Update نصب شود، APKهای Release باید با همان certificate نسخه قبلی امضا شوند. این پروژه از یک keystore ثابت استفاده می‌کند که در GitHub Secrets نگهداری می‌شود.
+این نسخه از فایل ثابت `yadavar-release.jks` در ریشه repository استفاده می‌کند. بنابراین نیازی به ساخت Keystore روی کامپیوتر، نصب JDK، اجرای اسکریپت PowerShell یا ساخت GitHub Secrets نیست.
 
-### 1. ساخت Keystore بدون Android Studio
+**فایل `yadavar-release.jks` را حذف یا جایگزین نکن.** همه نسخه‌های آینده باید با همین فایل ساخته شوند تا Android آن‌ها را Update نسخه نصب‌شده تشخیص بدهد.
 
-PowerShell را در پوشه پروژه باز کنید و اجرا کنید:
+### اجرای ساخت APK
 
-```powershell
-.\tools\generate-yadavar-signing.ps1
-```
+`Actions → Android CI → Run workflow`
 
-اگر اجرای فایل‌های PowerShell مسدود بود، می‌توانید دستور زیر را فقط برای همین پنجره اجرا کنید:
+پس از موفقیت، از بخش `Artifacts` مورد `yadavar-release-apk` را دانلود و فایل `app-release.apk` را روی گوشی نصب کنید.
 
-```powershell
-Set-ExecutionPolicy -Scope Process Bypass
-```
+### ساخت نسخه جدید
 
-سپس دوباره اسکریپت را اجرا کنید.
+در `app/build.gradle.kts`، برای هر نسخه جدید `versionCode` را یک واحد افزایش دهید و `versionName` را هم به‌روزرسانی کنید. نسخه فعلی `1.3` با `versionCode = 4` است؛ نسخه بعدی باید حداقل `versionCode = 5` داشته باشد.
 
-اسکریپت فایل‌های زیر را می‌سازد:
-
-- `yadavar-release.jks` — کلید خصوصی؛ فقط نزد خودتان نگه دارید.
-- `yadavar-keystore-base64.txt` — نسخه Base64 برای قرار دادن در GitHub Secret.
-
-### 2. ساخت GitHub Secrets
-
-در Repository بروید به:
-
-`Settings → Secrets and variables → Actions → Secrets → New repository secret`
-
-چهار Secret بسازید:
-
-- `YADAVAR_KEYSTORE_BASE64` → تمام محتوای `yadavar-keystore-base64.txt`
-- `YADAVAR_STORE_PASSWORD` → رمز Keystore که هنگام ساخت وارد کردید
-- `YADAVAR_KEY_ALIAS` → `yadavar`
-- `YADAVAR_KEY_PASSWORD` → رمز Key که هنگام ساخت وارد کردید
-
-GitHub این اطلاعات را به‌صورت Secret در اختیار Workflow قرار می‌دهد؛ آن‌ها را در فایل‌های پروژه یا لاگ Workflow قرار ندهید.
-
-### 3. اولین نصب Release
-
-چون گفتید نسخه قبلی را یک بار حذف می‌کنید، اولین Release این پروژه را بعد از تنظیم Secrets به‌عنوان نصب جدید روی گوشی نصب کنید.
-
-بعد از آن، برای نسخه‌های آینده فقط `versionCode` را افزایش دهید و همان Secrets را نگه دارید. Android به‌طور معمول Update را وقتی می‌پذیرد که certificate نسخه جدید با نسخه نصب‌شده تطابق داشته باشد. اگر امضا همان باشد، داده‌های داخلی برنامه مثل داده‌های Room با نصب Update پاک نمی‌شوند.
-
-### 4. پیدا کردن APK
-
-بعد از اجرای موفق:
-
-`Actions → Android CI → release → Artifacts → yadavar-release-apk`
-
-فایل `app-release.apk` را دریافت و روی گوشی نصب کنید.
+امضای ثابت، شناسه برنامه و Migration دیتابیس باعث می‌شوند نصب Update معمولاً داده‌های داخلی برنامه را نگه دارد؛ برنامه را برای Update حذف نکنید.
 
 ## نسخه فعلی
 
-- `versionName = 1.2`
-- `versionCode = 3`
-- Room database version = 4
+- `versionName = 1.3`
+- `versionCode = 4`
+- Room database version = 5
 
 ## نکته مهم درباره دیتابیس
 

@@ -9,7 +9,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 
 @Database(
     entities = [AlarmEntity::class, BirthdayEntity::class, FinancialEntity::class],
-    version = 4,
+    version = 5,
     exportSchema = false
 )
 abstract class YadavarDatabase : RoomDatabase() {
@@ -52,6 +52,14 @@ abstract class YadavarDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // Keep every existing reminder visible in the matrix after update.
+                // Newly-created reminders can opt in via the UI.
+                db.execSQL("ALTER TABLE alarms ADD COLUMN showInMatrix INTEGER NOT NULL DEFAULT 1")
+            }
+        }
+
         fun getInstance(context: Context): YadavarDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -59,7 +67,7 @@ abstract class YadavarDatabase : RoomDatabase() {
                     YadavarDatabase::class.java,
                     "yadavar_alarms.db"
                 )
-                    .addMigrations(MIGRATION_2_3, MIGRATION_3_4)
+                    .addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
                     .build()
                 INSTANCE = instance
                 instance

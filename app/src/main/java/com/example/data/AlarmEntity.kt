@@ -1,5 +1,6 @@
 package com.example.data
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import com.example.util.JalaliCalendar
@@ -21,11 +22,13 @@ data class AlarmEntity(
     val prio: String = "normal", // "urgent", "high", "normal", "low"
     val tag: String = "شخصی", // "کار", "شخصی", "روتین", "خونه", "سلامت", "تولد"
     val isEnabled: Boolean = true,
-    val hasAlarm: Boolean = true, // If false, keep this item for the Eisenhower matrix without ringing.
+    val hasAlarm: Boolean = true, // If false, this reminder does not ring; matrix visibility is independent.
     val isVibrate: Boolean = true,
     val snoozeMinutes: Int = 10,
     val isDone: Boolean = false,
-    val createdAt: Long = System.currentTimeMillis()
+    val createdAt: Long = System.currentTimeMillis(),
+    // Existing rows are kept in the matrix by migration; new reminders opt in explicitly.
+    @ColumnInfo(defaultValue = "1") val showInMatrix: Boolean = false
 ) {
     fun toJalaliDate(): JalaliDate? = if (hasDate) JalaliDate(jalaliYear, jalaliMonth, jalaliDay) else null
 

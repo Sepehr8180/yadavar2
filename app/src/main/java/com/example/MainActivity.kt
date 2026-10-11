@@ -390,15 +390,20 @@ fun YadavarMainScreen(viewModel: MainViewModel) {
             editingAlarm = editingAlarm,
             initialDate = selectedDate,
             defaultPriority = initialQuadrant,
+            defaultShowInMatrix = selectedTab == MainViewModel.TAB_MATRIX,
             onDismiss = viewModel::closeAddEditSheet,
-            onSave = { id, title, hour, minute, isDaily, repeatDays, jalaliDate, prio, tag, isVibrate, snoozeMinutes, hasDate, hasAlarm ->
+            onSave = { id, title, hour, minute, isDaily, repeatDays, jalaliDate, prio, tag, isVibrate, snoozeMinutes, hasDate, hasAlarm, showInMatrix ->
                 viewModel.saveAlarm(
                     id, title, hour, minute, isDaily, repeatDays, jalaliDate, hasDate,
-                    prio, tag, isVibrate, snoozeMinutes, hasAlarm
+                    prio, tag, isVibrate, snoozeMinutes, hasAlarm, showInMatrix
                 )
                 coroutineScope.launch {
                     snackbarHostState.showSnackbar(
-                        if (hasAlarm) "آلارم «$title» تنظیم شد" else "یادآور «$title» در ماتریس آیزنهاور ثبت شد"
+                        when {
+                            hasAlarm -> "آلارم «$title» تنظیم شد"
+                            showInMatrix || !hasDate -> "یادآور «$title» در ماتریس آیزنهاور ثبت شد"
+                            else -> "یادآور «$title» ثبت شد"
+                        }
                     )
                 }
             }

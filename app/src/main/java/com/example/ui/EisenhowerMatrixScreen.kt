@@ -82,7 +82,7 @@ fun EisenhowerMatrixScreen(
     onAddInQuadrant: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val activeTasks = remember(alarms) { alarms.filter { !it.isDone } }
+    val activeTasks = remember(alarms) { alarms.filter { !it.isDone && it.showInMatrix } }
 
     val urgentTasks = remember(activeTasks) { activeTasks.filter { it.prio == "urgent" } }
     val highTasks = remember(activeTasks) { activeTasks.filter { it.prio == "high" } }
@@ -563,7 +563,7 @@ fun DraggableMatrixItem(
 
                 Text(
                     text = task.title,
-                    fontSize = 13.sp,
+                    fontSize = 12.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 2,

@@ -1,13 +1,14 @@
 package com.example.ui
 
+import android.app.TimePickerDialog
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -38,7 +39,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -53,6 +53,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -72,6 +73,7 @@ fun AddEditAlarmSheet(
     editingAlarm: AlarmEntity?,
     initialDate: JalaliDate,
     defaultPriority: String = "normal",
+    defaultShowInMatrix: Boolean = false,
     onDismiss: () -> Unit,
     onSave: (
         id: Long,
@@ -86,10 +88,12 @@ fun AddEditAlarmSheet(
         isVibrate: Boolean,
         snoozeMinutes: Int,
         hasDate: Boolean,
-        hasAlarm: Boolean
+        hasAlarm: Boolean,
+        showInMatrix: Boolean
     ) -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val context = LocalContext.current
 
     val currentCal = remember { Calendar.getInstance() }
     var hour by remember {
@@ -145,6 +149,10 @@ fun AddEditAlarmSheet(
         mutableStateOf(editingAlarm?.hasAlarm ?: true)
     }
 
+    var showInMatrix by remember {
+        mutableStateOf(editingAlarm?.showInMatrix ?: defaultShowInMatrix)
+    }
+
     val tagsList = listOf("کار", "شخصی", "روتین", "خونه", "سلامت", "مطالعه", "تولد")
 
     ModalBottomSheet(
@@ -193,7 +201,7 @@ fun AddEditAlarmSheet(
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = if (hasAlarm) "زنگ گوشی فعال است" else "فقط یادآوری / ماتریس آیزنهاور",
+                            text = if (hasAlarm) "زنگ گوشی فعال است" else "زنگ گوشی غیرفعال است",
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold
                         )
@@ -201,7 +209,7 @@ fun AddEditAlarmSheet(
                             text = when {
                                 hasAlarm -> "در زمان تعیین‌شده صدای آلارم پخش می‌شود."
                                 !hasDate -> "برای فعال کردن زنگ، ابتدا «تاریخ مشخص دارد» را روشن کنید."
-                                else -> "هیچ زنگی پخش نمی‌شود و مورد در ماتریس باقی می‌ماند."
+                                else -> "این یادآور بی‌صداست؛ نمایش در ماتریس را جداگانه انتخاب کن."
                             },
                             fontSize = 12.sp,
                             color = MaterialTheme.colorScheme.outline
@@ -250,7 +258,11 @@ fun AddEditAlarmSheet(
                         checked = hasDate,
                         onCheckedChange = { enabled ->
                             hasDate = enabled
-                            if (!enabled) hasAlarm = false
+                            if (!enabled) {
+                                hasAlarm = false
+                                // Undated tasks are intended for the Eisenhower matrix.
+                                showInMatrix = true
+                            }
                         }
                     )
                 }
@@ -258,17 +270,56 @@ fun AddEditAlarmSheet(
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            if (hasAlarm) {
-                // Time Selector Card with Big Digits
+            // Matrix membership is independent from whether the reminder rings.
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(14.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f)
+                )
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(14.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "نمایش در ماتریس آیزنهاور",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = when {
+                                !hasDate -> "یادآور بدون تاریخ در ماتریس باقی می‌ماند."
+                                showInMatrix -> "این مورد در ماتریس نمایش داده می‌شود."
+                                else -> "این مورد در ماتریس نمایش داده نمی‌شود."
+                            },
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.outline
+                        )
+                    }
+                    Switch(
+                        checked = showInMatrix || !hasDate,
+                        enabled = hasDate,
+                        onCheckedChange = { showInMatrix = it }
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            if (hasAlarm && hasDate) {
+                // Use Android's familiar native time picker instead of hard-to-control sliders.
                 Card(
                     shape = RoundedCornerShape(18.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)
+                    ),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(18.dp),
+                        modifier = Modifier.fillMaxWidth().padding(16.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
@@ -277,68 +328,36 @@ fun AddEditAlarmSheet(
                             fontWeight = FontWeight.Medium,
                             color = MaterialTheme.colorScheme.outline
                         )
-
-                        Spacer(modifier = Modifier.height(8.dp))
-
+                        Spacer(modifier = Modifier.height(4.dp))
                         Text(
                             text = JalaliCalendar.formatTime(hour, minute),
-                            fontSize = 46.sp,
+                            fontSize = 36.sp,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary
                         )
-
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        // Hour and Minute Controls
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceEvenly
+                        Spacer(modifier = Modifier.height(10.dp))
+                        OutlinedButton(
+                            onClick = {
+                                TimePickerDialog(
+                                    context,
+                                    { _, selectedHour, selectedMinute ->
+                                        hour = selectedHour
+                                        minute = selectedMinute
+                                    },
+                                    hour,
+                                    minute,
+                                    true
+                                ).show()
+                            },
+                            modifier = Modifier.fillMaxWidth().height(48.dp),
+                            shape = RoundedCornerShape(12.dp)
                         ) {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text("ساعت: ${JalaliCalendar.toPersianDigits(hour.toString())}", fontSize = 13.sp)
-                                Slider(
-                                    value = hour.toFloat(),
-                                    onValueChange = { hour = it.toInt() },
-                                    valueRange = 0f..23f,
-                                    steps = 22,
-                                    modifier = Modifier.width(140.dp)
-                                )
-                            }
-
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text("دقیقه: ${JalaliCalendar.toPersianDigits(minute.toString())}", fontSize = 13.sp)
-                                Slider(
-                                    value = minute.toFloat(),
-                                    onValueChange = { minute = it.toInt() },
-                                    valueRange = 0f..59f,
-                                    steps = 58,
-                                    modifier = Modifier.width(140.dp)
-                                )
-                            }
-                        }
-
-                        // Quick Time Preset Chips
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .horizontalScroll(rememberScrollState()),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            PresetChip("۰۷:۰۰ صبح") { hour = 7; minute = 0 }
-                            PresetChip("۰۸:۳۰ صبح") { hour = 8; minute = 30 }
-                            PresetChip("۱۲:۳۰ ظهر") { hour = 12; minute = 30 }
-                            PresetChip("۱۷:۰۰ عصر") { hour = 17; minute = 0 }
-                            PresetChip("۲۲:۰۰ شب") { hour = 22; minute = 0 }
-                            PresetChip("+۳۰ دقیقه") {
-                                val c = Calendar.getInstance().apply { add(Calendar.MINUTE, 30) }
-                                hour = c.get(Calendar.HOUR_OF_DAY)
-                                minute = c.get(Calendar.MINUTE)
-                            }
+                            Icon(Icons.Default.AccessTime, contentDescription = null)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("انتخاب ساعت")
                         }
                     }
                 }
-
-
             }
 
             Spacer(modifier = Modifier.height(18.dp))
@@ -591,7 +610,8 @@ fun AddEditAlarmSheet(
                         isVibrate,
                         snoozeMinutes,
                         hasDate,
-                        hasAlarm
+                        hasAlarm && hasDate,
+                        showInMatrix || !hasDate
                     )
                 },
                 modifier = Modifier

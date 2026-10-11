@@ -163,7 +163,27 @@ object GeminiAiParser {
         }
     }
 
-    /** Natural-language phrases meaning the user wants a matrix reminder without a phone alarm. */
+    /** Whether the user explicitly wants the reminder to appear in the Eisenhower matrix. */
+    fun requestsMatrix(rawText: String): Boolean {
+        val normalized = rawText.replace("‌", " ").lowercase()
+        if (requestsNoMatrix(normalized)) return false
+        return listOf(
+            "در ماتریس", "تو ماتریس", "توی ماتریس", "داخل ماتریس",
+            "در آیزنهاور", "تو آیزنهاور", "توی آیزنهاور", "داخل آیزنهاور",
+            "نمایش در ماتریس", "ماتریس آیزنهاور"
+        ).any { normalized.contains(it) }
+    }
+
+    /** Explicit phrases that exclude a reminder from the matrix. */
+    fun requestsNoMatrix(rawText: String): Boolean {
+        val normalized = rawText.replace("‌", " ").lowercase()
+        return listOf(
+            "ماتریس نباشه", "ماتریس نباشد", "تو ماتریس نیاد", "توی ماتریس نیاد",
+            "در ماتریس نیاد", "در ماتریس قرار نگیره", "در ماتریس نمایش نده",
+            "ماتریس نذار", "آیزنهاور نباشه", "در آیزنهاور نیاد"
+        ).any { normalized.contains(it) }
+    }
+
     /** Natural-language phrases meaning the task has no specific date and should stay in the matrix. */
     fun requestsNoDate(rawText: String): Boolean {
         val normalized = rawText.replace("‌", " ").lowercase()
@@ -179,10 +199,7 @@ object GeminiAiParser {
             "فقط در ماتریس",
             "فقط توی ماتریس",
             "فقط در آیزنهاور",
-            "فقط توی آیزنهاور",
-            "در ماتریس بیاد",
-            "توی ماتریس باشه",
-            "تو ماتریس بیاد"
+            "فقط توی آیزنهاور"
         ).any { normalized.contains(it) }
     }
 
@@ -201,11 +218,7 @@ object GeminiAiParser {
             "فقط در ماتریس",
             "فقط توی ماتریس",
             "فقط در آیزنهاور",
-            "فقط توی آیزنهاور",
-            "در ماتریس بیاد",
-            "تو ماتریس بیاد",
-            "در ماتریس باشد",
-            "توی ماتریس باشه"
+            "فقط توی آیزنهاور"
         ).any { normalized.contains(it) }
     }
 
@@ -323,7 +336,19 @@ object GeminiAiParser {
             .replace("فقط در آیزنهاور", "")
             .replace("فقط توی آیزنهاور", "")
             .replace("در ماتریس بیاد", "")
+            .replace("تو ماتریس بیاد", "")
             .replace("توی ماتریس باشه", "")
+            .replace("در ماتریس باشد", "")
+            .replace("در ماتریس", "")
+            .replace("تو ماتریس", "")
+            .replace("توی ماتریس", "")
+            .replace("داخل ماتریس", "")
+            .replace("در آیزنهاور", "")
+            .replace("تو آیزنهاور", "")
+            .replace("توی آیزنهاور", "")
+            .replace("داخل آیزنهاور", "")
+            .replace("ماتریس نباشه", "")
+            .replace("ماتریس نباشد", "")
             .trim()
             .ifBlank { raw.trim() }
 
