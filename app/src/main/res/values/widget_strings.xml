@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_eisenhower_description">ماتریس آیزنهاور و تیک‌زدن کارها</string>
+    <string name="widget_today_description">خلاصه امروز، آلارم، تولد و قسط بعدی</string>
+    <string name="widget_voice_description">ثبت یادآور با گفتار فارسی و تأیید قبل از ذخیره</string>
+</resources>

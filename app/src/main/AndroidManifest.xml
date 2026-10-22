@@ -76,6 +76,48 @@
             android:exported="false"
             android:foregroundServiceType="mediaPlayback" />
 
+
+        <!-- Home-screen widgets -->
+        <activity
+            android:name=".widget.VoiceReminderActivity"
+            android:exported="false"
+            android:label="یادآور صوتی"
+            android:theme="@style/Theme.MyApplication"
+            android:windowSoftInputMode="adjustResize" />
+
+        <receiver android:name=".widget.WidgetActionReceiver" android:exported="false" />
+        <receiver android:name=".widget.WidgetTimeChangeReceiver" android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.DATE_CHANGED" />
+                <action android:name="android.intent.action.TIME_SET" />
+                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+                <action android:name="android.intent.action.LOCALE_CHANGED" />
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
+
+        <receiver android:name=".widget.EisenhowerMatrixWidgetProvider" android:exported="true" android:label="ماتریس آیزنهاور">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/eisenhower_widget_info" />
+        </receiver>
+
+        <receiver android:name=".widget.TodayWidgetProvider" android:exported="true" android:label="امروز">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/today_widget_info" />
+        </receiver>
+
+        <receiver android:name=".widget.VoiceReminderWidgetProvider" android:exported="true" android:label="یادآور صوتی">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/voice_reminder_widget_info" />
+        </receiver>
+
     </application>
 
 </manifest>

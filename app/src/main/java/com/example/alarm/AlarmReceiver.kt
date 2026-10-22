@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import androidx.core.content.ContextCompat
 import com.example.data.YadavarDatabase
+import com.example.widget.WidgetUpdater
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -52,6 +53,8 @@ class AlarmReceiver : BroadcastReceiver() {
                         // Single-time alarm finished
                         db.alarmDao().updateAlarmStatus(alarmId, false)
                     }
+                    // Refresh widget summaries after this alarm is consumed or rescheduled.
+                    WidgetUpdater.refreshAll(context)
                 }
             }
         }

@@ -76,6 +76,7 @@ import com.example.ui.FinancialScreen
 import com.example.ui.FinancialSheet
 import com.example.ui.MainViewModel
 import com.example.ui.theme.MyApplicationTheme
+import com.example.widget.WidgetUpdater
 import com.example.util.JalaliCalendar
 import kotlinx.coroutines.launch
 
@@ -86,6 +87,8 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        applyWidgetDestination(intent)
+        WidgetUpdater.refreshAll(this)
 
         setContent {
             MyApplicationTheme(darkTheme = false) {
@@ -114,6 +117,26 @@ class MainActivity : ComponentActivity() {
                     YadavarMainScreen(viewModel)
                 }
             }
+        }
+    }
+
+    override fun onNewIntent(intent: android.content.Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        applyWidgetDestination(intent)
+    }
+
+    private fun applyWidgetDestination(intent: android.content.Intent?) {
+        val tab = intent?.getIntExtra(WidgetUpdater.EXTRA_WIDGET_TAB, -1) ?: -1
+        val openAddAlarm = intent?.getBooleanExtra(WidgetUpdater.EXTRA_OPEN_ADD_ALARM, false) == true
+        if (openAddAlarm) {
+            viewModel.setSelectedTab(MainViewModel.TAB_ALARMS)
+            viewModel.openAddAlarm()
+            intent?.removeExtra(WidgetUpdater.EXTRA_OPEN_ADD_ALARM)
+            intent?.removeExtra(WidgetUpdater.EXTRA_WIDGET_TAB)
+        } else if (tab in 0..5) {
+            viewModel.setSelectedTab(tab)
+            intent?.removeExtra(WidgetUpdater.EXTRA_WIDGET_TAB)
         }
     }
 }

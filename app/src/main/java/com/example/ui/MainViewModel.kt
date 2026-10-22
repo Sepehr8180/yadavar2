@@ -13,6 +13,7 @@ import com.example.data.FinancialEntity
 import com.example.util.GeminiAiParser
 import com.example.util.JalaliCalendar
 import com.example.util.JalaliDate
+import com.example.widget.WidgetUpdater
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -186,6 +187,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             val updated = alarm.copy(isEnabled = newStatus)
             if (newStatus && alarm.hasAlarm) scheduler.scheduleAlarm(updated)
             else scheduler.cancelAlarm(alarm.id)
+            WidgetUpdater.refreshAll(getApplication<Application>())
         }
     }
 
@@ -195,12 +197,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             repository.setAlarmDone(alarm.id, newDone)
             if (newDone) scheduler.cancelAlarm(alarm.id)
             else if (alarm.isEnabled && alarm.hasAlarm) scheduler.scheduleAlarm(alarm.copy(isDone = false))
+            WidgetUpdater.refreshAll(getApplication<Application>())
         }
     }
 
     fun updateAlarmPriority(alarm: AlarmEntity, newPrio: String) {
         viewModelScope.launch {
             repository.updateAlarm(alarm.copy(prio = newPrio, showInMatrix = newPrio != "none"))
+            WidgetUpdater.refreshAll(getApplication<Application>())
         }
     }
 
@@ -244,6 +248,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             val toSchedule = if (id == 0L) alarm.copy(id = savedId) else alarm
             if (toSchedule.hasAlarm) scheduler.scheduleAlarm(toSchedule) else scheduler.cancelAlarm(toSchedule.id)
             closeAddEditSheet()
+            WidgetUpdater.refreshAll(getApplication<Application>())
         }
     }
 
@@ -251,6 +256,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             scheduler.cancelAlarm(alarm.id)
             repository.deleteAlarm(alarm)
+            WidgetUpdater.refreshAll(getApplication<Application>())
         }
     }
 
@@ -260,6 +266,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             repository.insertBirthday(bday)
             ensureBirthdayAlarm(bday)
             closeAddBirthday()
+            WidgetUpdater.refreshAll(getApplication<Application>())
         }
     }
 
@@ -273,6 +280,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     repository.deleteAlarm(alarm)
                 }
             repository.deleteBirthday(bday)
+            WidgetUpdater.refreshAll(getApplication<Application>())
         }
     }
 
@@ -345,6 +353,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private suspend fun reconcileBirthdayAlarms() {
         val birthdays = repository.allBirthdays.first()
         birthdays.forEach { birthday -> ensureBirthdayAlarm(birthday) }
+        WidgetUpdater.refreshAll(getApplication<Application>())
     }
 
     fun saveFinancial(
@@ -374,17 +383,22 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             )
             repository.insertFinancialItem(item)
             closeFinancialSheet()
+            WidgetUpdater.refreshAll(getApplication<Application>())
         }
     }
 
     fun toggleFinancialPaid(item: FinancialEntity, occurrence: JalaliDate) {
         viewModelScope.launch {
             repository.updateFinancialItem(item.setPaidOn(occurrence, !item.isPaidOn(occurrence)))
+            WidgetUpdater.refreshAll(getApplication<Application>())
         }
     }
 
     fun deleteFinancial(item: FinancialEntity) {
-        viewModelScope.launch { repository.deleteFinancialItem(item) }
+        viewModelScope.launch {
+            repository.deleteFinancialItem(item)
+            WidgetUpdater.refreshAll(getApplication<Application>())
+        }
     }
 
     fun processVoiceOrTextWithAi(text: String, onComplete: (String) -> Unit) {
@@ -433,6 +447,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 val savedId = repository.insertAlarm(alarm)
                 val saved = alarm.copy(id = savedId)
                 if (saved.hasAlarm) scheduler.scheduleAlarm(saved)
+                WidgetUpdater.refreshAll(getApplication<Application>())
 
                 val formattedTime = JalaliCalendar.formatTime(parsed.hour, parsed.minute)
                 val tagsStr = parsed.tags.joinToString(" ") { "#$it" }
