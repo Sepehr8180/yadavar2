@@ -74,6 +74,7 @@ fun AlarmCard(
         "urgent" -> PriorityUrgent
         "high" -> PriorityHigh
         "low" -> PriorityLow
+        "none" -> MaterialTheme.colorScheme.outline
         else -> PriorityNormal
     }
 
@@ -81,6 +82,7 @@ fun AlarmCard(
         "urgent" -> "فوری"
         "high" -> "مهم"
         "low" -> "کم"
+        "none" -> "ندارد"
         else -> "عادی"
     }
 

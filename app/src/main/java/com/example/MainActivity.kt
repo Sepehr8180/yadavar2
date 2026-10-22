@@ -390,18 +390,17 @@ fun YadavarMainScreen(viewModel: MainViewModel) {
             editingAlarm = editingAlarm,
             initialDate = selectedDate,
             defaultPriority = initialQuadrant,
-            defaultShowInMatrix = selectedTab == MainViewModel.TAB_MATRIX,
             onDismiss = viewModel::closeAddEditSheet,
             onSave = { id, title, hour, minute, isDaily, repeatDays, jalaliDate, prio, tag, isVibrate, snoozeMinutes, hasDate, hasAlarm, showInMatrix ->
                 viewModel.saveAlarm(
                     id, title, hour, minute, isDaily, repeatDays, jalaliDate, hasDate,
-                    prio, tag, isVibrate, snoozeMinutes, hasAlarm, showInMatrix
+                    prio, tag, isVibrate, snoozeMinutes, hasAlarm
                 )
                 coroutineScope.launch {
                     snackbarHostState.showSnackbar(
                         when {
                             hasAlarm -> "آلارم «$title» تنظیم شد"
-                            showInMatrix || !hasDate -> "یادآور «$title» در ماتریس آیزنهاور ثبت شد"
+                            showInMatrix && prio != "none" -> "یادآور «$title» در ماتریس آیزنهاور ثبت شد"
                             else -> "یادآور «$title» ثبت شد"
                         }
                     )
@@ -413,8 +412,8 @@ fun YadavarMainScreen(viewModel: MainViewModel) {
     if (showAddBirthdaySheet) {
         AddBirthdaySheet(
             onDismiss = viewModel::closeAddBirthday,
-            onSave = { name, day, month, year, hasAlarm, notes ->
-                viewModel.saveBirthday(name, day, month, year, hasAlarm, notes)
+            onSave = { name, day, month, year, notes ->
+                viewModel.saveBirthday(name, day, month, year, notes)
                 coroutineScope.launch { snackbarHostState.showSnackbar("تولد «$name» در تقویم ثبت شد 🎂") }
             }
         )

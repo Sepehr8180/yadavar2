@@ -37,7 +37,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -343,7 +342,7 @@ fun BirthdayCard(
 @Composable
 fun AddBirthdaySheet(
     onDismiss: () -> Unit,
-    onSave: (name: String, day: Int, month: Int, year: Int?, hasAlarm: Boolean, notes: String) -> Unit
+    onSave: (name: String, day: Int, month: Int, year: Int?, notes: String) -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
@@ -351,7 +350,6 @@ fun AddBirthdaySheet(
     var day by remember { mutableIntStateOf(1) }
     var month by remember { mutableIntStateOf(1) }
     var yearStr by remember { mutableStateOf("") }
-    var hasAlarm by remember { mutableStateOf(true) }
     var notes by remember { mutableStateOf("") }
     var monthMenuExpanded by remember { mutableStateOf(false) }
 
@@ -486,29 +484,22 @@ fun AddBirthdaySheet(
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // Alarm toggle
+            // Every birthday gets an automatic reminder the night before.
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Default.NotificationsActive,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.secondary,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "زنگ آلارم صبحگاهی (ساعت ۰۹:۰۰)",
-                        fontSize = 14.sp
-                    )
-                }
-
-                Switch(
-                    checked = hasAlarm,
-                    onCheckedChange = { hasAlarm = it }
+                Icon(
+                    imageVector = Icons.Default.NotificationsActive,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.secondary,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "آلارم خودکار شب قبل از تولد · ساعت ۲۲:۰۰",
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             }
 
@@ -522,7 +513,6 @@ fun AddBirthdaySheet(
                             day,
                             month,
                             yearStr.trim().toIntOrNull(),
-                            hasAlarm,
                             notes.trim()
                         )
                     }

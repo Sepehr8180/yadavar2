@@ -44,8 +44,8 @@ class AlarmReceiver : BroadcastReceiver() {
                 val db = YadavarDatabase.getInstance(context)
                 val alarm = db.alarmDao().getAlarmById(alarmId)
                 if (alarm != null) {
-                    if (alarm.isDaily || alarm.parseRepeatDays().isNotEmpty()) {
-                        // Re-schedule for next occurrence
+                    if (AlarmScheduler.isBirthdayAlarm(alarm) || alarm.isDaily || alarm.parseRepeatDays().isNotEmpty()) {
+                        // Birthday alarms recur annually; other repeat alarms use their normal recurrence.
                         val scheduler = AlarmScheduler(context)
                         scheduler.scheduleAlarm(alarm)
                     } else {

@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.alarm.AlarmScheduler
 import com.example.YadavarApp
 import com.example.data.AlarmEntity
 import com.example.data.BirthdayEntity
@@ -16,6 +17,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -91,6 +93,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _initialQuadrant = MutableStateFlow("urgent")
     val initialQuadrant: StateFlow<String> = _initialQuadrant.asStateFlow()
+
+    init {
+        // Repair/migrate generated birthday alarms for birthdays already stored on the device.
+        viewModelScope.launch { reconcileBirthdayAlarms() }
+    }
 
     fun setSelectedTab(tab: Int) {
         _selectedTab.value = tab
@@ -192,7 +199,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun updateAlarmPriority(alarm: AlarmEntity, newPrio: String) {
-        viewModelScope.launch { repository.updateAlarm(alarm.copy(prio = newPrio)) }
+        viewModelScope.launch {
+            repository.updateAlarm(alarm.copy(prio = newPrio, showInMatrix = newPrio != "none"))
+        }
     }
 
     fun saveAlarm(
@@ -208,8 +217,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         tag: String,
         isVibrate: Boolean,
         snoozeMinutes: Int,
-        hasAlarm: Boolean,
-        showInMatrix: Boolean = false
+        hasAlarm: Boolean
     ) {
         viewModelScope.launch {
             val alarm = AlarmEntity(
@@ -228,7 +236,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 isEnabled = true,
                 hasAlarm = hasAlarm && hasDate,
                 isVibrate = isVibrate,
-                showInMatrix = showInMatrix || !hasDate,
+                showInMatrix = prio != "none",
                 snoozeMinutes = snoozeMinutes,
                 isDone = false
             )
@@ -246,38 +254,97 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun saveBirthday(name: String, day: Int, month: Int, year: Int?, hasAlarm: Boolean, notes: String) {
+    fun saveBirthday(name: String, day: Int, month: Int, year: Int?, notes: String) {
         viewModelScope.launch {
-            val bday = BirthdayEntity(name = name, day = day, month = month, year = year, hasAlarm = hasAlarm, notes = notes)
+            val bday = BirthdayEntity(name = name, day = day, month = month, year = year, hasAlarm = true, notes = notes)
             repository.insertBirthday(bday)
-
-            if (hasAlarm) {
-                val today = JalaliCalendar.today()
-                val targetYear = if (month < today.month || (month == today.month && day < today.day)) today.year + 1 else today.year
-                val bdayAlarm = AlarmEntity(
-                    title = "🎂 تولد $name",
-                    hour = 9,
-                    minute = 0,
-                    isDaily = false,
-                    repeatDays = "",
-                    jalaliYear = targetYear,
-                    jalaliMonth = month,
-                    jalaliDay = day,
-                    prio = "high",
-                    tag = "تولد",
-                    isEnabled = true,
-                    hasAlarm = true,
-                    showInMatrix = false
-                )
-                val aId = repository.insertAlarm(bdayAlarm)
-                scheduler.scheduleAlarm(bdayAlarm.copy(id = aId))
-            }
+            ensureBirthdayAlarm(bday)
             closeAddBirthday()
         }
     }
 
     fun deleteBirthday(bday: BirthdayEntity) {
-        viewModelScope.launch { repository.deleteBirthday(bday) }
+        viewModelScope.launch {
+            val birthdayTitle = "${AlarmScheduler.BIRTHDAY_TITLE_PREFIX}${bday.name}"
+            repository.allAlarms.first()
+                .filter { AlarmScheduler.isBirthdayAlarm(it) && it.title == birthdayTitle }
+                .forEach { alarm ->
+                    scheduler.cancelAlarm(alarm.id)
+                    repository.deleteAlarm(alarm)
+                }
+            repository.deleteBirthday(bday)
+        }
+    }
+
+    private fun nextBirthdayOccurrence(birthday: BirthdayEntity): JalaliDate {
+        val today = JalaliCalendar.today()
+        fun dateForYear(year: Int) = JalaliDate(
+            year = year,
+            month = birthday.month,
+            day = minOf(birthday.day, JalaliCalendar.monthLength(year, birthday.month))
+        )
+        var target = dateForYear(today.year)
+        if (JalaliCalendar.diffDays(target, today) <= 0) target = dateForYear(today.year + 1)
+        return target
+    }
+
+    private suspend fun ensureBirthdayAlarm(birthday: BirthdayEntity) {
+        if (!birthday.hasAlarm) repository.updateBirthday(birthday.copy(hasAlarm = true))
+        val alarmDate = JalaliCalendar.addDays(nextBirthdayOccurrence(birthday), -1)
+        val title = "${AlarmScheduler.BIRTHDAY_TITLE_PREFIX}${birthday.name}"
+        val matching = repository.allAlarms.first()
+            .filter { AlarmScheduler.isBirthdayAlarm(it) && it.title == title }
+        val existing = matching.firstOrNull()
+        val base = existing?.copy(
+            hour = 22,
+            minute = 0,
+            isDaily = false,
+            repeatDays = "",
+            jalaliYear = alarmDate.year,
+            jalaliMonth = alarmDate.month,
+            jalaliDay = alarmDate.day,
+            hasDate = true,
+            prio = "high",
+            tag = AlarmScheduler.BIRTHDAY_TAG,
+            isEnabled = true,
+            hasAlarm = true,
+            isDone = false,
+            showInMatrix = false
+        ) ?: AlarmEntity(
+            title = title,
+            hour = 22,
+            minute = 0,
+            isDaily = false,
+            repeatDays = "",
+            jalaliYear = alarmDate.year,
+            jalaliMonth = alarmDate.month,
+            jalaliDay = alarmDate.day,
+            hasDate = true,
+            prio = "high",
+            tag = AlarmScheduler.BIRTHDAY_TAG,
+            isEnabled = true,
+            hasAlarm = true,
+            showInMatrix = false
+        )
+
+        matching.drop(1).forEach { duplicate ->
+            scheduler.cancelAlarm(duplicate.id)
+            repository.deleteAlarm(duplicate)
+        }
+        val saved = if (existing != null) {
+            scheduler.cancelAlarm(existing.id)
+            repository.updateAlarm(base)
+            base
+        } else {
+            val id = repository.insertAlarm(base)
+            base.copy(id = id)
+        }
+        scheduler.scheduleAlarm(saved)
+    }
+
+    private suspend fun reconcileBirthdayAlarms() {
+        val birthdays = repository.allBirthdays.first()
+        birthdays.forEach { birthday -> ensureBirthdayAlarm(birthday) }
     }
 
     fun saveFinancial(
@@ -341,7 +408,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
                 val noAlarm = GeminiAiParser.requestsNoAlarm(text)
                 val noDate = GeminiAiParser.requestsNoDate(text)
-                val showInMatrix = noDate || GeminiAiParser.requestsMatrix(text)
+                val explicitlyExcludedFromMatrix = GeminiAiParser.requestsNoMatrix(text)
+                // Never let an AI guess accidentally opt out: "none" is reserved for an explicit user request.
+                val effectivePriority = if (explicitlyExcludedFromMatrix) "none" else (parsed.prio.takeUnless { it == "none" } ?: "normal")
+                // AI reminders belong in the matrix by default; only an explicit opt-out excludes them.
+                val showInMatrix = !explicitlyExcludedFromMatrix
                 val alarm = AlarmEntity(
                     title = parsed.title,
                     hour = parsed.hour,
@@ -352,7 +423,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     jalaliMonth = if (noDate) 0 else correctedDate.month,
                     jalaliDay = if (noDate) 0 else correctedDate.day,
                     hasDate = !noDate,
-                    prio = parsed.prio,
+                    prio = effectivePriority,
                     tag = parsed.tags.firstOrNull() ?: "شخصی",
                     isEnabled = true,
                     hasAlarm = !noAlarm && !noDate,
@@ -365,16 +436,19 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
                 val formattedTime = JalaliCalendar.formatTime(parsed.hour, parsed.minute)
                 val tagsStr = parsed.tags.joinToString(" ") { "#$it" }
-                val prioLabel = when (parsed.prio) {
+                val prioLabel = when (effectivePriority) {
                     "urgent" -> "فوری"
                     "high" -> "مهم"
                     "low" -> "کم"
+                    "none" -> "ندارد"
                     else -> "عادی"
                 }
                 val modeText = when {
+                    explicitlyExcludedFromMatrix && noDate -> "بدون تاریخ · خارج از ماتریس"
                     noDate -> "فقط در ماتریس آیزنهاور · بدون تاریخ"
+                    explicitlyExcludedFromMatrix -> "یادآور خارج از ماتریس"
                     noAlarm -> "یادآور بدون زنگ · با تاریخ"
-                    else -> "آلارم گوشی"
+                    else -> "آلارم گوشی · در ماتریس"
                 }
                 onComplete("✅ «${parsed.title}» ثبت شد — $modeText ($formattedTime · $tagsStr · اولویت $prioLabel)")
             } catch (e: Exception) {

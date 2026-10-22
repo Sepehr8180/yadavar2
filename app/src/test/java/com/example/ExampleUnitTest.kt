@@ -63,4 +63,12 @@ class WeekdayParsingTest {
         val thursday = com.example.util.JalaliCalendar.nextOrSameDayOfWeek(currentDay, 5)
         assertEquals(JalaliDate(1405, 7, 9), thursday)
     }
+
+
+    @Test
+    fun explicitMatrixOptOutIsDetected() {
+        assertTrue(com.example.util.GeminiAiParser.requestsNoMatrix("فردا قبض را پرداخت کن ولی توی ماتریس نباشه"))
+        assertTrue(com.example.util.GeminiAiParser.requestsNoMatrix("پیگیری پروژه بدون اولویت"))
+        assertFalse(com.example.util.GeminiAiParser.requestsNoMatrix("فردا جلسه را یادآوری کن"))
+    }
 }

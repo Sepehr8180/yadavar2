@@ -24,15 +24,15 @@ Workflow در `.github/workflows/android.yml` با JDK 21 اجرا می‌شود
 
 ### ساخت نسخه جدید
 
-در `app/build.gradle.kts`، برای هر نسخه جدید `versionCode` را یک واحد افزایش دهید و `versionName` را هم به‌روزرسانی کنید. نسخه فعلی `1.3` با `versionCode = 4` است؛ نسخه بعدی باید حداقل `versionCode = 5` داشته باشد.
+در `app/build.gradle.kts`، برای هر نسخه جدید `versionCode` را یک واحد افزایش دهید و `versionName` را هم به‌روزرسانی کنید. نسخه فعلی `1.4` با `versionCode = 5` است؛ نسخه بعدی باید `versionCode = 6` داشته باشد.
 
 امضای ثابت، شناسه برنامه و Migration دیتابیس باعث می‌شوند نصب Update معمولاً داده‌های داخلی برنامه را نگه دارد؛ برنامه را برای Update حذف نکنید.
 
 ## نسخه فعلی
 
-- `versionName = 1.3`
-- `versionCode = 4`
-- Room database version = 5
+- `versionName = 1.4`
+- `versionCode = 5`
+- Room database version = 6
 
 ## نکته مهم درباره دیتابیس
 

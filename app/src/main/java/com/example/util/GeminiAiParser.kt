@@ -18,7 +18,7 @@ data class AiParsedResult(
     val jalaliDate: JalaliDate,
     val hour: Int,
     val minute: Int,
-    val prio: String, // "urgent", "high", "normal", "low"
+    val prio: String, // "urgent", "high", "normal", "low", or "none" (outside the matrix)
     val tags: List<String>,
     val repeat: String // "none", "daily", "weekly"
 )
@@ -67,7 +67,7 @@ object GeminiAiParser {
             3. jm: ماه شمسی 1 تا 12 (عدد)
             4. jd: روز شمسی 1 تا 31 (عدد)
             5. time: ساعت به فرمت "HH:MM" مثلا "09:30" یا "18:00". اگر نگفت، ساعت کاری مناسب پیشنهاد بده مثلا "09:00" یا "17:00".
-            6. prio: اولویت کار: "urgent" (فوری)، "high" (مهم)، "normal" (عادی)، "low" (کم).
+            6. prio: اولویت کار: "urgent" (فوری)، "high" (مهم)، "normal" (عادی)، "low" (کم)، یا "none" (وقتی کاربر می‌گوید اولویت ندارد یا در ماتریس نباشد). اگر کاربر درباره خارج‌بودن از ماتریس چیزی نگفت، به‌طور پیش‌فرض یکی از اولویت‌های معمول را انتخاب کن.
             7. tags: آرایه‌ای از 1 تا 3 برچسب فارسی مناسب مرتبط با موضوع (مثلاً ["کار"، "پروژه"] یا ["خرید"، "خونه"] یا ["شخصی"] یا ["سلامت"]).
             8. repeat: تکرار کار: "none" یا "daily" یا "weekly".
             
@@ -142,7 +142,7 @@ object GeminiAiParser {
             jalaliDate = JalaliDate(jy, jm, jd),
             hour = h,
             minute = m,
-            prio = if (prio in listOf("urgent", "high", "normal", "low")) prio else "normal",
+            prio = if (prio in listOf("urgent", "high", "normal", "low", "none")) prio else "normal",
             tags = tagsList,
             repeat = if (repeat in listOf("daily", "weekly")) repeat else "none"
         )
@@ -176,11 +176,23 @@ object GeminiAiParser {
 
     /** Explicit phrases that exclude a reminder from the matrix. */
     fun requestsNoMatrix(rawText: String): Boolean {
-        val normalized = rawText.replace("‌", " ").lowercase()
+        val normalized = rawText.replace("‌", " ")
+            .replace("ي", "ی").replace("ك", "ک")
+            .lowercase().replace(Regex("\\s+"), " ").trim()
         return listOf(
-            "ماتریس نباشه", "ماتریس نباشد", "تو ماتریس نیاد", "توی ماتریس نیاد",
-            "در ماتریس نیاد", "در ماتریس قرار نگیره", "در ماتریس نمایش نده",
-            "ماتریس نذار", "آیزنهاور نباشه", "در آیزنهاور نیاد"
+            "ماتریس نباشه", "ماتریس نباشد", "توی ماتریس نباشه", "تو ماتریس نباشه",
+            "نه تو ماتریس", "نه توی ماتریس", "نه در ماتریس", "تو ماتریس نه", "توی ماتریس نه",
+            "تو ماتریس نیاد", "توی ماتریس نیاد",
+            "در ماتریس نیاد", "داخل ماتریس نیاد", "در ماتریس قرار نگیره", "توی ماتریس قرار نگیره",
+            "تو ماتریس قرار نگیره", "در ماتریس قرار نده", "توی ماتریس قرار نده", "تو ماتریس قرار نده",
+            "در ماتریس نمایش نده", "ماتریس نذار", "به ماتریس اضافه نکن", "بیرون از ماتریس", "خارج از ماتریس",
+            "نمیخوام تو ماتریس", "نمی خوام تو ماتریس", "نمیخوام توی ماتریس", "نمی خوام توی ماتریس",
+            "نیازی نیست توی ماتریس", "نیازی نیست در ماتریس", "لازم نیست توی ماتریس", "لازم نیست در ماتریس",
+            "ماتریس لازم نیست", "آیزنهاور نباشه", "در آیزنهاور نیاد", "توی آیزنهاور نباشه",
+            "تو آیزنهاور نباشه", "در آیزنهاور قرار نگیره", "در آیزنهاور قرار نده",
+            "توی آیزنهاور نذار", "تو آیزنهاور نذار", "آیزنهاور لازم نیست",
+            "بدون اولویت", "اولویت ندارد", "اولویت نداره", "اولویتی ندارد", "اولویتی نداره",
+            "اولویت نمیخوام", "اولویت نمی خوام", "اولویت نمی‌خوام", "بدون اولویت باشه"
         ).any { normalized.contains(it) }
     }
 
@@ -349,6 +361,39 @@ object GeminiAiParser {
             .replace("داخل آیزنهاور", "")
             .replace("ماتریس نباشه", "")
             .replace("ماتریس نباشد", "")
+            .replace("توی ماتریس نباشه", "")
+            .replace("تو ماتریس نباشه", "")
+            .replace("نه تو ماتریس", "")
+            .replace("نه توی ماتریس", "")
+            .replace("نه در ماتریس", "")
+            .replace("تو ماتریس نه", "")
+            .replace("توی ماتریس نه", "")
+            .replace("تو ماتریس نیاد", "")
+            .replace("توی ماتریس نیاد", "")
+            .replace("در ماتریس نیاد", "")
+            .replace("در ماتریس قرار نگیره", "")
+            .replace("توی ماتریس قرار نگیره", "")
+            .replace("تو ماتریس قرار نگیره", "")
+            .replace("در ماتریس قرار نده", "")
+            .replace("توی ماتریس قرار نده", "")
+            .replace("تو ماتریس قرار نده", "")
+            .replace("به ماتریس اضافه نکن", "")
+            .replace("بیرون از ماتریس", "")
+            .replace("خارج از ماتریس", "")
+            .replace("تو ماتریس قرار نگیره", "")
+            .replace("در آیزنهاور نیاد", "")
+            .replace("آیزنهاور نباشه", "")
+            .replace("توی آیزنهاور نباشه", "")
+            .replace("بدون اولویت", "")
+            .replace("اولویت ندارد", "")
+            .replace("اولویت نداره", "")
+            .replace("اولویتی ندارد", "")
+            .replace("اولویتی نداره", "")
+            .replace("اولویت نمیخوام", "")
+            .replace("اولویت نمی خوام", "")
+            .replace("توی آیزنهاور نذار", "")
+            .replace("تو آیزنهاور نذار", "")
+            .replace("آیزنهاور لازم نیست", "")
             .trim()
             .ifBlank { raw.trim() }
 
@@ -366,7 +411,7 @@ object GeminiAiParser {
             jalaliDate = targetDate,
             hour = hour % 24,
             minute = minute % 60,
-            prio = prio,
+            prio = if (requestsNoMatrix(raw)) "none" else prio,
             tags = tags,
             repeat = repeat
         )

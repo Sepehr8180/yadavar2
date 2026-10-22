@@ -73,7 +73,6 @@ fun AddEditAlarmSheet(
     editingAlarm: AlarmEntity?,
     initialDate: JalaliDate,
     defaultPriority: String = "normal",
-    defaultShowInMatrix: Boolean = false,
     onDismiss: () -> Unit,
     onSave: (
         id: Long,
@@ -147,10 +146,6 @@ fun AddEditAlarmSheet(
 
     var hasAlarm by remember {
         mutableStateOf(editingAlarm?.hasAlarm ?: true)
-    }
-
-    var showInMatrix by remember {
-        mutableStateOf(editingAlarm?.showInMatrix ?: defaultShowInMatrix)
     }
 
     val tagsList = listOf("کار", "شخصی", "روتین", "خونه", "سلامت", "مطالعه", "تولد")
@@ -260,49 +255,8 @@ fun AddEditAlarmSheet(
                             hasDate = enabled
                             if (!enabled) {
                                 hasAlarm = false
-                                // Undated tasks are intended for the Eisenhower matrix.
-                                showInMatrix = true
                             }
                         }
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(14.dp))
-
-            // Matrix membership is independent from whether the reminder rings.
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(14.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f)
-                )
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(14.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "نمایش در ماتریس آیزنهاور",
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = when {
-                                !hasDate -> "یادآور بدون تاریخ در ماتریس باقی می‌ماند."
-                                showInMatrix -> "این مورد در ماتریس نمایش داده می‌شود."
-                                else -> "این مورد در ماتریس نمایش داده نمی‌شود."
-                            },
-                            fontSize = 12.sp,
-                            color = MaterialTheme.colorScheme.outline
-                        )
-                    }
-                    Switch(
-                        checked = showInMatrix || !hasDate,
-                        enabled = hasDate,
-                        onCheckedChange = { showInMatrix = it }
                     )
                 }
             }
@@ -500,13 +454,14 @@ fun AddEditAlarmSheet(
             Spacer(modifier = Modifier.height(8.dp))
 
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 PrioChip("فوری", "urgent", PriorityUrgent, prio == "urgent") { prio = "urgent" }
                 PrioChip("مهم", "high", PriorityHigh, prio == "high") { prio = "high" }
                 PrioChip("عادی", "normal", PriorityNormal, prio == "normal") { prio = "normal" }
                 PrioChip("کم", "low", PriorityLow, prio == "low") { prio = "low" }
+                PrioChip("ندارد", "none", MaterialTheme.colorScheme.outline, prio == "none") { prio = "none" }
             }
 
             Spacer(modifier = Modifier.height(18.dp))
@@ -611,7 +566,7 @@ fun AddEditAlarmSheet(
                         snoozeMinutes,
                         hasDate,
                         hasAlarm && hasDate,
-                        showInMatrix || !hasDate
+                        prio != "none"
                     )
                 },
                 modifier = Modifier

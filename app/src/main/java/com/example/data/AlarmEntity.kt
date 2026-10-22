@@ -19,7 +19,7 @@ data class AlarmEntity(
     val jalaliMonth: Int,
     val jalaliDay: Int,
     val hasDate: Boolean = true,
-    val prio: String = "normal", // "urgent", "high", "normal", "low"
+    val prio: String = "normal", // "urgent", "high", "normal", "low", or "none" (excluded from matrix)
     val tag: String = "شخصی", // "کار", "شخصی", "روتین", "خونه", "سلامت", "تولد"
     val isEnabled: Boolean = true,
     val hasAlarm: Boolean = true, // If false, this reminder does not ring; matrix visibility is independent.
@@ -28,7 +28,7 @@ data class AlarmEntity(
     val isDone: Boolean = false,
     val createdAt: Long = System.currentTimeMillis(),
     // Existing rows are kept in the matrix by migration; new reminders opt in explicitly.
-    @ColumnInfo(defaultValue = "1") val showInMatrix: Boolean = false
+    @ColumnInfo(defaultValue = "1") val showInMatrix: Boolean = true
 ) {
     fun toJalaliDate(): JalaliDate? = if (hasDate) JalaliDate(jalaliYear, jalaliMonth, jalaliDay) else null
 

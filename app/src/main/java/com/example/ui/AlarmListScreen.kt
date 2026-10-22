@@ -39,6 +39,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.alarm.AlarmScheduler
 import com.example.data.AlarmEntity
 import com.example.util.JalaliCalendar
 
@@ -62,6 +63,7 @@ fun AlarmListScreen(
     val filteredAlarms = remember(alarms, selectedPrio, selectedTag) {
         alarms.filter { alarm ->
             alarm.hasAlarm &&
+            !AlarmScheduler.isBirthdayAlarm(alarm) &&
             !alarm.isDone &&
             (selectedPrio == null || alarm.prio == selectedPrio) &&
             (selectedTag == null || alarm.tag == selectedTag)

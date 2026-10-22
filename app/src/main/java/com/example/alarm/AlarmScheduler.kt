@@ -21,6 +21,11 @@ class AlarmScheduler(private val context: Context) {
         const val EXTRA_ALARM_TAG = "extra_alarm_tag"
         const val EXTRA_ALARM_PRIO = "extra_alarm_prio"
         const val EXTRA_IS_SNOOZE = "extra_is_snooze"
+        const val BIRTHDAY_TAG = "تولد"
+        const val BIRTHDAY_TITLE_PREFIX = "🎂 تولد "
+
+        fun isBirthdayAlarm(alarm: AlarmEntity): Boolean =
+            alarm.tag == BIRTHDAY_TAG && alarm.title.startsWith(BIRTHDAY_TITLE_PREFIX)
     }
 
     fun scheduleAlarm(alarm: AlarmEntity) {
@@ -145,6 +150,7 @@ class AlarmScheduler(private val context: Context) {
 
     fun calculateNextTriggerMillis(alarm: AlarmEntity): Long {
         if (!alarm.hasDate) return Long.MAX_VALUE
+        if (isBirthdayAlarm(alarm)) return calculateNextBirthdayTriggerMillis(alarm)
         val now = Calendar.getInstance()
         val repeatDays = alarm.parseRepeatDays()
 
@@ -200,6 +206,49 @@ class AlarmScheduler(private val context: Context) {
             set(Calendar.MILLISECOND, 0)
         }
         return target.timeInMillis
+    }
+
+    /** Schedules birthday alarms every year at 22:00 on the day before the birthday. */
+    private fun calculateNextBirthdayTriggerMillis(alarm: AlarmEntity): Long {
+        val storedDate = com.example.util.JalaliDate(alarm.jalaliYear, alarm.jalaliMonth, alarm.jalaliDay)
+        // Older app versions stored the actual birthday at 09:00. New versions store
+        // the previous day at 22:00; accept both formats during upgrade/reboot.
+        val storedDateIsNightBefore = alarm.hour == 22 && alarm.minute == 0
+        val birthdayDate = if (storedDateIsNightBefore) {
+            JalaliCalendar.addDays(storedDate, 1)
+        } else {
+            storedDate
+        }
+        val today = JalaliCalendar.today()
+        val nowMillis = System.currentTimeMillis()
+
+        fun birthdayInYear(year: Int) = com.example.util.JalaliDate(
+            year = year,
+            month = birthdayDate.month,
+            day = minOf(birthdayDate.day, JalaliCalendar.monthLength(year, birthdayDate.month))
+        )
+
+        fun triggerFor(birthday: com.example.util.JalaliDate): Long {
+            val nightBefore = JalaliCalendar.addDays(birthday, -1)
+            val (gy, gm, gd) = JalaliCalendar.jalaliToGregorian(nightBefore.year, nightBefore.month, nightBefore.day)
+            return Calendar.getInstance().apply {
+                set(gy, gm - 1, gd, 22, 0, 0)
+                set(Calendar.MILLISECOND, 0)
+            }.timeInMillis
+        }
+
+        var nextBirthday = birthdayInYear(today.year)
+        if (JalaliCalendar.diffDays(nextBirthday, today) <= 0) {
+            nextBirthday = birthdayInYear(today.year + 1)
+        }
+
+        var trigger = triggerFor(nextBirthday)
+        // If today's 22:00 alert has already passed, wait for the following year.
+        if (trigger <= nowMillis) {
+            nextBirthday = birthdayInYear(nextBirthday.year + 1)
+            trigger = triggerFor(nextBirthday)
+        }
+        return trigger
     }
 
     fun formatRemainingTime(alarm: AlarmEntity): String {

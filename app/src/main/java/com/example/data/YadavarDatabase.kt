@@ -9,7 +9,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 
 @Database(
     entities = [AlarmEntity::class, BirthdayEntity::class, FinancialEntity::class],
-    version = 5,
+    version = 6,
     exportSchema = false
 )
 abstract class YadavarDatabase : RoomDatabase() {
@@ -60,6 +60,16 @@ abstract class YadavarDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_5_6 = object : Migration(5, 6) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // Preserve the existing matrix choice: reminders previously hidden from
+                // the matrix become "no priority"; all others keep their current priority.
+                db.execSQL("UPDATE alarms SET prio = 'none' WHERE showInMatrix = 0 AND tag != 'تولد'")
+                db.execSQL("UPDATE alarms SET showInMatrix = 0 WHERE prio = 'none' AND tag != 'تولد'")
+                db.execSQL("UPDATE alarms SET showInMatrix = 1 WHERE prio != 'none' AND tag != 'تولد'")
+            }
+        }
+
         fun getInstance(context: Context): YadavarDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -67,7 +77,7 @@ abstract class YadavarDatabase : RoomDatabase() {
                     YadavarDatabase::class.java,
                     "yadavar_alarms.db"
                 )
-                    .addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+                    .addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
                     .build()
                 INSTANCE = instance
                 instance
