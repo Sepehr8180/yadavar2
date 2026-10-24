@@ -54,7 +54,14 @@ object WidgetUpdater {
             manager.getAppWidgetIds(ComponentName(appContext, EisenhowerMatrixWidgetProvider::class.java))
                 .forEach { id -> manager.updateAppWidget(id, matrixRemoteViews(appContext, id, alarms)) }
             manager.getAppWidgetIds(ComponentName(appContext, TodayWidgetProvider::class.java))
-                .forEach { id -> manager.updateAppWidget(id, todayRemoteViews(appContext, id, alarms, birthdays, financialItems)) }
+                .forEach { id ->
+                    try {
+                        manager.updateAppWidget(id, todayRemoteViews(appContext, id, alarms, birthdays, financialItems))
+                    } catch (todayError: Exception) {
+                        Log.e(TAG, "Could not render Today widget id=$id", todayError)
+                        manager.updateAppWidget(id, todayFallbackRemoteViews(appContext, id))
+                    }
+                }
             manager.getAppWidgetIds(ComponentName(appContext, VoiceReminderWidgetProvider::class.java))
                 .forEach { id -> manager.updateAppWidget(id, voiceRemoteViews(appContext)) }
         } catch (e: Exception) {
@@ -115,7 +122,14 @@ object WidgetUpdater {
             parent.addView(containerId, empty)
             return
         }
-        val shownTasks = tasks.sortedBy { it.hour * 60 + it.minute }.take(2)
+        // Estimate the rows that physically fit in each quadrant using the current widget size.
+        // Widget hosts report dimensions in dp; reserve space for the header and quadrant padding.
+        val manager = AppWidgetManager.getInstance(context)
+        val options = manager.getAppWidgetOptions(widgetId)
+        val widgetHeightDp = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 250)
+        val rowsThatFit = ((widgetHeightDp / 2 - 48) / 28).coerceIn(1, 12)
+        val sortedTasks = tasks.sortedBy { it.hour * 60 + it.minute }
+        val shownTasks = sortedTasks.take(rowsThatFit)
         shownTasks.forEach { alarm ->
             val row = RemoteViews(context.packageName, R.layout.widget_task_row)
             row.setTextViewText(R.id.widget_task_title, alarm.title)
@@ -130,7 +144,7 @@ object WidgetUpdater {
             )
             parent.addView(containerId, row)
         }
-        val remaining = tasks.size - shownTasks.size
+        val remaining = sortedTasks.size - shownTasks.size
         if (remaining > 0) {
             val more = RemoteViews(context.packageName, R.layout.widget_empty_row)
             more.setTextViewText(R.id.widget_empty_text, "+ ${JalaliCalendar.toPersianDigits(remaining.toString())} مورد دیگر")
@@ -210,6 +224,23 @@ object WidgetUpdater {
             "${nextPayment.first.title} · ${JalaliCalendar.formatNumber(nextPayment.first.amount)} · ${nextPayment.second.formatted()}"
         }
         views.setTextViewText(R.id.widget_today_payment, paymentText)
+        views.setOnClickPendingIntent(R.id.widget_today_payment_row, openTabPendingIntent(context, TAB_FINANCIAL, 830 + widgetId))
+        return views
+    }
+
+    private fun todayFallbackRemoteViews(context: Context, widgetId: Int): RemoteViews {
+        val views = RemoteViews(context.packageName, R.layout.widget_today)
+        views.setTextViewText(R.id.widget_today_date, JalaliCalendar.today().formatted(includeDayName = true))
+        views.setOnClickPendingIntent(R.id.widget_today_header, openTabPendingIntent(context, TAB_CALENDAR))
+        views.removeAllViews(R.id.widget_today_tasks)
+        val row = RemoteViews(context.packageName, R.layout.widget_empty_row)
+        row.setTextViewText(R.id.widget_empty_text, "برای دیدن جزئیات، برنامه را باز کن")
+        views.addView(R.id.widget_today_tasks, row)
+        views.setTextViewText(R.id.widget_today_next_alarm, "آلارم بعدی")
+        views.setTextViewText(R.id.widget_today_birthday, "تولد بعدی")
+        views.setTextViewText(R.id.widget_today_payment, "قسط بعدی")
+        views.setOnClickPendingIntent(R.id.widget_today_alarm_row, openTabPendingIntent(context, TAB_ALARMS, 810 + widgetId))
+        views.setOnClickPendingIntent(R.id.widget_today_birthday_row, openTabPendingIntent(context, TAB_BIRTHDAYS, 820 + widgetId))
         views.setOnClickPendingIntent(R.id.widget_today_payment_row, openTabPendingIntent(context, TAB_FINANCIAL, 830 + widgetId))
         return views
     }

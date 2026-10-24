@@ -7,24 +7,24 @@
     android:padding="12dp">
 
     <LinearLayout android:id="@+id/widget_today_header" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:paddingBottom="4dp">
-        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="امروز" android:textColor="#28232F" android:textSize="16sp" android:textStyle="bold" />
-        <TextView android:id="@+id/widget_today_date" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="تاریخ امروز" android:textColor="#716D78" android:textSize="11sp" />
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="امروز" android:textColor="@color/widget_text_primary" android:textSize="16sp" android:textStyle="bold" />
+        <TextView android:id="@+id/widget_today_date" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="تاریخ امروز" android:textColor="@color/widget_text_secondary" android:textSize="11sp" />
     </LinearLayout>
 
-    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingTop="4dp" android:paddingBottom="2dp" android:text="کارهای امروز" android:textColor="#55418D" android:textStyle="bold" android:textSize="12sp" />
+    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingTop="4dp" android:paddingBottom="2dp" android:text="کارهای امروز" android:textColor="@color/widget_accent" android:textStyle="bold" android:textSize="12sp" />
     <LinearLayout android:id="@+id/widget_today_tasks" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" />
 
-    <View android:layout_width="match_parent" android:layout_height="1dp" android:layout_marginTop="5dp" android:layout_marginBottom="5dp" android:background="#E7E2EA" />
+    <View android:layout_width="match_parent" android:layout_height="1dp" android:layout_marginTop="5dp" android:layout_marginBottom="5dp" android:background="@color/widget_divider" />
     <LinearLayout android:id="@+id/widget_today_alarm_row" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:paddingTop="2dp" android:paddingBottom="2dp">
-        <TextView android:layout_width="22dp" android:layout_height="wrap_content" android:text="◷" android:textSize="16sp" android:textColor="#55418D" />
-        <TextView android:id="@+id/widget_today_next_alarm" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:maxLines="2" android:ellipsize="end" android:text="آلارم بعدی" android:textColor="#302D35" android:textSize="11sp" />
+        <TextView android:layout_width="22dp" android:layout_height="wrap_content" android:text="◷" android:textSize="16sp" android:textColor="@color/widget_accent" />
+        <TextView android:id="@+id/widget_today_next_alarm" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:maxLines="2" android:ellipsize="end" android:text="آلارم بعدی" android:textColor="@color/widget_text_primary" android:textSize="11sp" />
     </LinearLayout>
     <LinearLayout android:id="@+id/widget_today_birthday_row" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:paddingTop="2dp" android:paddingBottom="2dp">
         <TextView android:layout_width="22dp" android:layout_height="wrap_content" android:text="🎂" android:textSize="13sp" />
-        <TextView android:id="@+id/widget_today_birthday" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:maxLines="2" android:ellipsize="end" android:text="تولد بعدی" android:textColor="#302D35" android:textSize="11sp" />
+        <TextView android:id="@+id/widget_today_birthday" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:maxLines="2" android:ellipsize="end" android:text="تولد بعدی" android:textColor="@color/widget_text_primary" android:textSize="11sp" />
     </LinearLayout>
     <LinearLayout android:id="@+id/widget_today_payment_row" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:paddingTop="2dp" android:paddingBottom="2dp">
         <TextView android:layout_width="22dp" android:layout_height="wrap_content" android:text="◈" android:textSize="15sp" android:textColor="#246B39" />
-        <TextView android:id="@+id/widget_today_payment" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:maxLines="2" android:ellipsize="end" android:text="قسط بعدی" android:textColor="#302D35" android:textSize="11sp" />
+        <TextView android:id="@+id/widget_today_payment" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:maxLines="2" android:ellipsize="end" android:text="قسط بعدی" android:textColor="@color/widget_text_primary" android:textSize="11sp" />
     </LinearLayout>
 </LinearLayout>

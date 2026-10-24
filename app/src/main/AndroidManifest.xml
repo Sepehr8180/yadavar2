@@ -82,7 +82,7 @@
             android:name=".widget.VoiceReminderActivity"
             android:exported="false"
             android:label="یادآور صوتی"
-            android:theme="@style/Theme.MyApplication"
+            android:theme="@style/Theme.Yadavar.VoicePopup"
             android:windowSoftInputMode="adjustResize" />
 
         <receiver android:name=".widget.WidgetActionReceiver" android:exported="false" />

@@ -10,5 +10,5 @@
     android:maxLines="1"
     android:ellipsize="end"
     android:text="کاری نیست"
-    android:textColor="#716D78"
+    android:textColor="@color/widget_text_secondary"
     android:textSize="10sp" />

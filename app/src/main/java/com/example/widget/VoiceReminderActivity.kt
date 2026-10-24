@@ -91,6 +91,7 @@ class VoiceReminderActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        window.setBackgroundDrawableResource(android.R.color.transparent)
 
         speechLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             if (result.resultCode == RESULT_OK) {
@@ -106,7 +107,7 @@ class VoiceReminderActivity : ComponentActivity() {
         }
 
         setContent {
-            MyApplicationTheme(darkTheme = false) {
+            MyApplicationTheme(darkTheme = (resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES) {
                 androidx.compose.runtime.CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
                     VoiceReminderScreen(
                         state = uiState.value,
@@ -122,7 +123,13 @@ class VoiceReminderActivity : ComponentActivity() {
             }
         }
 
-        window.decorView.post { startListening() }
+        window.decorView.post {
+            window.setLayout(
+                (resources.displayMetrics.widthPixels * 0.92f).toInt(),
+                (resources.displayMetrics.heightPixels * 0.68f).toInt()
+            )
+            startListening()
+        }
     }
 
     private fun startListening() {

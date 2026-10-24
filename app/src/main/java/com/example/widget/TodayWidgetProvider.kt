@@ -9,6 +9,10 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 
 class TodayWidgetProvider : AppWidgetProvider() {
+    override fun onAppWidgetOptionsChanged(context: Context, appWidgetManager: AppWidgetManager, appWidgetId: Int, newOptions: android.os.Bundle) {
+        WidgetUpdater.refreshAll(context)
+    }
+
     override fun onUpdate(context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray) {
         val pendingResult = goAsync()
         val appContext = context.applicationContext

@@ -16,7 +16,7 @@
         android:layout_height="wrap_content"
         android:gravity="center"
         android:text="□"
-        android:textColor="#42414A"
+        android:textColor="@color/widget_text_primary"
         android:textSize="19sp"
         android:contentDescription="انجام شد" />
 
@@ -28,6 +28,6 @@
         android:maxLines="2"
         android:ellipsize="end"
         android:text="عنوان کار"
-        android:textColor="#28262D"
+        android:textColor="@color/widget_text_primary"
         android:textSize="12sp" />
 </LinearLayout>
